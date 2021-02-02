@@ -21,8 +21,7 @@ class TOC:
 	
 	
 	def render_toc(self, note):
-		"""Render the table of contents for the given note and return True.
-		If no TOC was requested or generated, return False."""
+		"""Render the table of contents for the given note. Return False if no TOC was requested or if the generated TOC is identical to the existing one; otherwise return True."""
 		#Should we generate a TOC? Look for an existing TOC or the placeholder header.
 		if not (self.options['toc_placeholder'] in note.headers or
 						self.options['toc_heading'] in note.headers):
@@ -43,7 +42,16 @@ class TOC:
 			print('no items')
 			return False
 			
-		self.rendered_tocs[note] = '\n'.join(r) + '\n'
+		self.rendered_tocs[note] = '\n'.join(r)
+		
+		#If there's a placeholder, we'll be adding a TOC
+		if self.options['toc_placeholder'] in note.headers:
+			return True
+		
+		#Use replace_section to extract the old TOC and compare; not actually making any changes to the note.
+		if replace_section(note.contents, self.options['toc_heading'], self.rendered_tocs[note])[1] == self.rendered_tocs[note]:
+			return False
+			
 		return True
 		
 		
