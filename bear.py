@@ -20,6 +20,7 @@ from zipfile import ZipFile
 from itertools import groupby
 from operator import itemgetter, attrgetter
 from time import time
+from urllib.parse import quote
 
 x_callback_url.setup()
 
@@ -28,6 +29,8 @@ options = {
 	'print_missing_links': False,
 	'context_lookaround': 250,
 	'scrub_tags_from_context': True,
+	'toc_heading': '## Table of contents',
+	'toc_placeholder': '## TOC',   # Shorthand to indicate a place for a new TOC
 }
 
 #info.json example
@@ -39,9 +42,13 @@ class BearFile():
 	def __init__(self, zip_file, tb_path):
 		"""Load a Bear textbundle."""
 		#So we can only write notes that have changes
-		self.modified = False
 		self.backlinks = []
-		self.rendered_backlinks = None
+		self.old_backlinks = ''
+		self.rendered_backlinks = ''
+
+		self.old_toc = ''
+		self.rendered_toc = ''
+		self.rendered_note = ''
 		
 		self.info = json.loads(zip_file.open(os.path.join(tb_path, 'info.json')).read())['net.shinyfrog.bear']
 		self.id = self.info['uniqueIdentifier']
@@ -50,6 +57,7 @@ class BearFile():
 		self.orig_note = self.note
 		self.parse_title()
 		self.drop_backlinks()
+
 		self.note = self.note.strip()
 		
 		for k,v in self.info.items():
@@ -62,6 +70,7 @@ class BearFile():
 		self.__dict__.update(self.info)
 		
 		self.extract_links()
+		self.extract_headers()
 		
 		
 	def __repr__(self):
@@ -87,11 +96,12 @@ class BearFile():
 				
 	def drop_backlinks(self):
 		#Drop any Backlinks section
-		bl_matcher = re.compile('{}\s*\n(?:.+?\n\n|.+?$)'.format(options['backlinks_heading']), flags=re.DOTALL)
-		self.old_backlinks = bl_matcher.search(self.note)
+		bl_matcher = re.compile('{}\s*\n(?:.+?\n\n|.+?$)'.format(re.escape(options['backlinks_heading'])), flags=re.DOTALL)
+		obl = bl_matcher.search(self.note)
+		self.old_backlinks = obl.group(0) if obl else ''
 		self.note = bl_matcher.sub('', self.note)
 		
-		
+	
 	def get_note_contents_from_bear(self):
 		"""Fetch the note contents from Bear using an x-callback. Slow but necessary for notes with images."""
 		def got_note(info):
@@ -144,10 +154,12 @@ class BearFile():
 			
 			
 	def render_backlinks(self):
+		"""Render backlinks into self.rendered_backlinks and return True. If no backlinks exist, return False."""
 		if not self.backlinks:
-			self.rendered_backlinks = ''
-			return
+			return False
+			
 		r = ['\n' + options['backlinks_heading']]
+		
 		#If the context and the title are the same, don't print the context
 		tm = re.compile(
 			'{}\s*[.?!]'.format(re.escape(f'[[{self.title}]]')), re.IGNORECASE)
@@ -158,12 +170,45 @@ class BearFile():
 				 		s += '\n\t* {}'.format(context)
 			r.append(s)
 		self.rendered_backlinks = '\n'.join(r)
+		
+		return True
+		
+		
+	def extract_headers(self):
+		"""Extract the headers from the note. Store (header level, header text, header plus hashes)."""
+		self.headers = [(len(h), txt.strip(), m.strip()) for m, h, txt in re.findall('^((#+)\s+(.+)\s*)$', self.note, flags=re.M)]
+		
+		
+	def render_toc(self):
+		"""Render the table of contents into self.rendered_toc and return True. If no toc was requested in the note, or there are no headings, return False."""
+		# Should we generate a TOC?
+		toc_requested = re.search('^(?:{}|{})[\t ]*$'.format(
+			re.escape(options['toc_placeholder']),
+			re.escape(options['toc_heading'])), self.note, flags=re.MULTILINE)
+		if not toc_requested:
+			return False
 			
+		r = [options['toc_heading']]
+		for level, header, full_header in self.headers:
+			#Skip the TOC header
+			if full_header == options['toc_heading'].strip() or full_header == options['toc_placeholder'].strip():
+				continue
+			r.append("\t"*(level-2) + f'* [{header}](bear://x-callback-url/open-note?id={self.id}&header={quote(header)})')
+
+		if len(r) <= 1:
+			return False
+			
+		self.rendered_toc = '\n'.join(r) + '\n'
+		return True
+		
 			
 	def render(self):
-		"""Render backlinks, TOC, etc"""
-		if self.rendered_backlinks is None:
-			self.render_backlinks()
+		"""Render backlinks, TOC, etc into self.rendered_note and return True. If nothing was changed, return False."""
+		modified = False
+		modified |= self.render_backlinks()
+		modified |= self.render_toc()
+		if not modified:
+			return False
 			
 		r = [f'# {self.title}']
 		#If there are tags at the end of the note, put backlinks above
@@ -178,28 +223,41 @@ class BearFile():
 			if self.rendered_backlinks:
 				r.append(self.rendered_backlinks)
 		
-		return '\n'.join(r)
+		self.rendered_note = '\n'.join(r)
+		
+		if self.rendered_toc:
+			toc_matcher = re.compile('(?:{}|{})[\t ]*\n(?:[\t ]*\n|(?:[\t ]*\*[^\n]+\n)+)'.format(
+				re.escape(options['toc_placeholder']),
+				re.escape(options['toc_heading'])), flags=re.DOTALL)
+			self.old_toc = toc_matcher.search(self.rendered_note).group(0)
+			self.rendered_note = toc_matcher.sub(self.rendered_toc, self.rendered_note)
+		
+		return True
 		
 		
-	def render_to_bear(self, only_if_needed=True):
+	def render_to_bear(self):
 		"""Save the rendered note to Bear. If this note has an ID, replace the existing note with the same ID. Otherwise, make a new note."""
 		
-		if only_if_needed and self.rendered_backlinks and self.old_backlinks and self.rendered_backlinks.strip() == self.old_backlinks.strip():
-			print(f'Backlinks unchanged in {self.title}, not saving to Bear')
+		#Find out if anything has actually changed
+		if(
+			self.rendered_backlinks.strip() == self.old_backlinks.strip()
+			and
+			self.rendered_toc.strip() == self.old_toc.strip()):
 			return
-				
+			
 		if self.fetch_from_bear:
 			self.get_note_contents_from_bear()
 			self.fetch_from_bear = False
+			self.render()
 		
 		def success(info):
 			pass
 			#print(f"Successfully sent '{info['title']}' to Bear")
 		
 		if self.id:
-			call_bear('add-text', success, id=self.id, text=self.render(), mode='replace_all')
+			call_bear('add-text', success, id=self.id, text=self.rendered_note, mode='replace_all')
 		else:
-			call_bear('create', success, text=self.render())
+			call_bear('create', success, text=self.rendered_note)
 
 			
 			
@@ -270,7 +328,7 @@ def find_backlinks(bear_files):
 			print('Note "{}" links to non-existent note "{}".'.format(bf.title, link))
 	
 				
-def process_bear_backup():
+def process_bear_backup(save=True, test_one=None):
 	backup_file = dialogs.pick_document(types=['public.item'])
 	if not backup_file:
 		return
@@ -280,12 +338,17 @@ def process_bear_backup():
 	bfs = read_bear_backup(backup_file)
 	find_backlinks(bfs)
 	print(f"Processed {len(list(bfs.keys()))} notes")
-	modnotes = [note for note in sorted(bfs.values(), key=attrgetter('modificationDate')) if note.modified]
+	modnotes = [note for note in sorted(bfs.values(), key=attrgetter('modificationDate')) if note.render()]
 	print(f"{len(modnotes)} notes to send to Bear")
-	for i, note in enumerate(modnotes):
-		progress(i/len(modnotes))
-		note.render_to_bear()
-	progress(1)
+	
+	if test_one:
+		bfs[test_one.lower()].render_to_bear()
+	elif save:
+		for i, note in enumerate(modnotes):
+			progress(i/len(modnotes))
+			note.render_to_bear()
+		progress(1)
+		
 	return bfs
 
 

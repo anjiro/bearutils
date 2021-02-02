@@ -7,6 +7,8 @@ import sys, re, os, argparse
 import ctypes, json, urllib.request, urllib.parse, urllib.error, uuid, urllib.request, urllib.parse, urllib.error
 import webbrowser
 
+_setup_run = False
+
 def argue():
 	parser = argparse.ArgumentParser()
 	
@@ -31,6 +33,9 @@ def reverse(url):
 def open_url(url, handler):
 	global _handler
 	global _requestID
+	global _setup_run
+	if not _setup_run:
+		setup()
 	_requestID = uuid.uuid1()
 	_handler = handler
 	x_success = urllib.parse.quote('pythonista://?request=%s'%_requestID)
@@ -132,6 +137,8 @@ def setup():
 	'openPythonistaURL:', openPythonistaURL_
 	)
 	#print 'swizzled'
+	global _setup_run
+	_setup_run = True
 	return
 	
 def main():
