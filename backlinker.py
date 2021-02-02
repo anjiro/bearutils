@@ -36,8 +36,7 @@ class Backlinker:
 				
 				self.backlinks.setdefault(dest.title, {}).setdefault(note, []).append(context)
 				
-		#Now render the backlinks section for each note and determine whether
-		# it's different than the old backlinks, if any.
+		#Now render the backlinks section for each note and determine whether it's different than the old backlinks, if any.
 		self.changed = {note: False for note in notes}
 		for title in self.backlinks:
 			note = notes[title]
