@@ -33,7 +33,6 @@ def reverse(url):
 def open_url(url, handler):
 	global _handler
 	global _requestID
-	global _setup_run
 	if not _setup_run:
 		setup()
 	_requestID = uuid.uuid1()
