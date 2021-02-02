@@ -112,12 +112,11 @@ class Note:
 	def parse_title(self):
 		#Bear uses the first line of a note as the title for linking
 		# purposes, regardless of heading markup
-		if self.contents[0] == '\n':
+		if re.match('[\t ]*\n', self.contents):
 			sys.stderr.write(f'Warning: no title for note ID {self.id}; contents:\n{self.orig_contents}\n')
 			self.title = None
 		else:
-			self.title, self.contents = re.match(
-				'(?:#*\s+)?([^\n]+)\n(.*)', self.contents, re.DOTALL).groups()
+			self.title  = re.match('(?:#*[\t ]+)?([^\n]+)\n', self.contents, re.DOTALL).group(1)
 				
 				
 	def extract_headers(self):
@@ -171,5 +170,9 @@ def process_bear_backup(save=True, test_one=None):
 			bn[test_one].save_to_bear()
 		else:
 			bn.save_to_bear()
-
+	
 	return bn
+	
+	
+if __name__ == "__main__":
+	process_bear_backup()
