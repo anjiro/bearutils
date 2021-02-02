@@ -20,9 +20,10 @@ def replace_section(text, header, new_text='', blank_lines_after_header=0):
 	"""Replace header and a paragraph of text following the header. Optionally allow some number of empty lines between the header and the paragraph; set to a negative number to replace only the header, ignoring any following lines. Return tuple (the new note contents, the text that was replaced), or (self.contents, '') if the target section was not found. Note that this function does not modify the note contents, but returns a copy."""
 	header_finder = '^{}(?:[\t ]*\n)'.format(re.escape(header))
 	if blank_lines_after_header < 0:
-		match = re.search(header_finder, text, flags=re.MULTILINE)
+		header_re = re.compile(header_finder, flags=re.MULTILINE)
+		match = header_re.search(text)
 		if match:
-			return re.sub(header_finder, new_text+'\n', text), header
+			return header_re.sub(new_text+'\n', text), header
 	else:
 		matcher = re.compile(header_finder + '{{1,{nbl}}}(?:[^ \n].+?(?=\n\n|\Z))?'.format(
 			nbl=blank_lines_after_header+1), flags=re.DOTALL|re.MULTILINE)
