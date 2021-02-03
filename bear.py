@@ -12,7 +12,7 @@ class BearNotes:
 		self.skip_archived = skip_archived
 		self.skip_trashed = skip_trashed
 		
-		self.notes = None
+		self.notes = {}
 		self.processors = []
 		
 		
@@ -48,7 +48,26 @@ class BearNotes:
 					note = Note(info, contents)
 					
 					notes[note.title] = note
-		self.notes = notes
+		self.notes.update(notes)
+		
+		
+	def read_textbundles(self, filenames):
+		notes = {}
+		for tb_path in filenames:
+			txtfn  = os.path.join(tb_path, 'text.txt')
+			infofn = os.path.join(tb_path, 'info.json')
+			
+			info = json.loads(open(infofn).read())['net.shinyfrog.bear']
+		
+			if info['archived'] and self.skip_archived or info['trashed'] and self.skip_trashed:
+				 continue
+			
+			contents = open(txtfn).read()
+			
+			note = Note(info, contents)
+			notes[note.title] = note
+			
+		self.notes.update(notes)
 		
 		
 	def process_notes(self):
@@ -149,21 +168,32 @@ class Note:
 		
 		
 		
-def process_bear_backup(save=True, test_one=None):
+def process_bear_backup(files=[], save=True, test_one=None):
 	from backlinker import Backlinker
 	from toc import TOC
 	
-	backup_file = dialogs.pick_document(types=['public.item'])
-	if not backup_file:
-		return
-	if os.path.splitext(backup_file)[1] != '.bearbk':
-		print(f"{os.path.split(backup_file)[-1]} isn't a .bearbk file")
-		return
+	if not files:
+		backup_file = dialogs.pick_document(types=['public.item'])
+		if not backup_file:
+			return
+		if os.path.splitext(backup_file)[1] != '.bearbk':
+			print(f"{os.path.split(backup_file)[-1]} isn't a .bearbk file")
+			return
 		
 	bn = BearNotes()
-	bn.register_processor(Backlinker())
-	bn.register_processor(TOC())
-	bn.read_backup_file(backup_file)
+	
+	if files:
+		#Don't look for backlinks unless we have the whole database
+		bn.register_processor(TOC())
+		bn.read_textbundles(files)
+	elif backup_file:
+		bn.register_processor(Backlinker())
+		bn.register_processor(TOC())
+		bn.read_backup_file(backup_file)
+	else:
+		print('No files to process')
+		 return
+		 
 	bn.process_notes()
 	if save:
 		if test_one:
@@ -175,8 +205,9 @@ def process_bear_backup(save=True, test_one=None):
 	
 	
 if __name__ == "__main__":
-	import sys
-	if sys.argv[1:]:
-		 print(f"argv: {','.join(argv[1:])}")
-		 sys.exit(0)
+	import appex
+	files = []
+	if appex.is_running_extension():
+		files = [f for f in appex.get_file_paths() if f.endswith('.textbundle')]
+		
 	process_bear_backup()
