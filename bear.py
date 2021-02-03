@@ -175,4 +175,8 @@ def process_bear_backup(save=True, test_one=None):
 	
 	
 if __name__ == "__main__":
+	import sys
+	if sys.argv[1:]:
+		 print(f"argv: {','.join(argv[1:])}")
+		 sys.exit(0)
 	process_bear_backup()
