@@ -74,6 +74,8 @@ class BearNotes:
 		notes = {}
 		for nid in bear_ids:
 		 	info = call_bear('open-note', id=nid.strip())
+		 	if info.get('is_trashed', False) and self.skip_trashed:
+		 		continue
 		 	contents = info.pop('note')
 		 	del info['tags']
 		 	note = Note(info, contents)
