@@ -3,7 +3,7 @@ import dateutil.parser
 import dialogs
 from zipfile import ZipFile
 from operator import attrgetter
-from utils import cidict, tag_re, Header, call_bear
+from utils import cidict, tag_re, Header, call_bear, is_bear_id
 
 
 class BearNotes:
@@ -54,21 +54,32 @@ class BearNotes:
 	def read_textbundles(self, filenames):
 		notes = {}
 		for tb_path in filenames:
-			txtfn  = os.path.join(tb_path, 'text.txt')
+			txtfn  = os.path.join(tb_path, 'text.markdown')
 			infofn = os.path.join(tb_path, 'info.json')
 			
 			info = json.loads(open(infofn).read())['net.shinyfrog.bear']
 		
-			if info['archived'] and self.skip_archived or info['trashed'] and self.skip_trashed:
+			if info.get('archived', False) and self.skip_archived or info.get('trashed', False) and self.skip_trashed:
 				 continue
 			
-			contents = open(txtfn).read()
+			contents = open(txtfn, encoding='utf-8').read()
 			
 			note = Note(info, contents)
 			notes[note.title] = note
 			
 		self.notes.update(notes)
 		
+		
+	def fetch_from_bear(self, bear_ids):
+		notes = {}
+		for nid in bear_ids:
+		 	info = call_bear('open-note', id=nid.strip())
+		 	contents = info.pop('note')
+		 	del info['tags']
+		 	note = Note(info, contents)
+		 	notes[note.title] = note
+		self.notes.update(notes)
+		 	
 		
 	def process_notes(self):
 		"""Process all the notes. First run group processors then single."""
@@ -83,7 +94,12 @@ class BearNotes:
 					
 	def save_to_bear(self):
 		"""Save modified notes to Bear."""
-		for note in sorted(self.notes.values(), key=attrgetter('modificationDate')):
+		try:
+			save_order = sorted(self.notes.values(), key=attrgetter('modificationDate'))
+		except AttributeError:
+			#Textbundle exports don't have timestamps
+			save_order = self.notes.values()
+		for note in save_order:
 			if note.modified:
 				note.save_to_bear()
 				
@@ -91,11 +107,15 @@ class BearNotes:
 
 class Note:
 	def __init__(self, info, contents):
+		self.modified = False
 		self.info = info
-		self.id = self.info['uniqueIdentifier']
 		self.orig_contents = contents
 		self._contents = contents.strip()
-		self.modified = False
+		
+		try:
+			self.id = self.info['uniqueIdentifier'] #In Bear backups
+		except KeyError:
+			self.id = self.info['identifier'] #From a call to open-note
 		
 		for k,v in self.info.items():
 			if v and 'Date' in k:
@@ -113,6 +133,7 @@ class Note:
 		
 	def __repr__(self):
 		return '<{}: {}>'.format(__class__.__name__, self.title)
+		
 		
 	@property
 	def contents(self):
@@ -168,33 +189,38 @@ class Note:
 		
 		
 		
-def process_bear_backup(files=[], save=True, test_one=None):
+def process_bear_files(save=True, test_one=None):
+	import clipboard, console
 	from backlinker import Backlinker
 	from toc import TOC
 	
-	if not files:
+	action = 2
+	cb = clipboard.get().split('\n')
+	if all(is_bear_id(l) for l in cb):
+		try:
+			action = console.alert('BearUtils', 'I found possible Bear Note IDs on the clipboard. What do you want to do?', 'Use IDs from clipboard', 'Select a Bear backup file')
+		except KeyboardInterrupt:
+			return
+	
+	bn = BearNotes()
+	
+	if action == 1:
+		bn.fetch_from_bear(cb)
+		bn.register_processor(TOC())
+	elif action == 2:
+		#Run normally
 		backup_file = dialogs.pick_document(types=['public.item'])
 		if not backup_file:
 			return
 		if os.path.splitext(backup_file)[1] != '.bearbk':
 			print(f"{os.path.split(backup_file)[-1]} isn't a .bearbk file")
 			return
-		
-	bn = BearNotes()
-	
-	if files:
-		#Don't look for backlinks unless we have the whole database
-		bn.register_processor(TOC())
-		bn.read_textbundles(files)
-	elif backup_file:
 		bn.register_processor(Backlinker())
 		bn.register_processor(TOC())
 		bn.read_backup_file(backup_file)
-	else:
-		print('No files to process')
-		 return
-		 
+	
 	bn.process_notes()
+	
 	if save:
 		if test_one:
 			bn[test_one].save_to_bear()
@@ -204,10 +230,5 @@ def process_bear_backup(files=[], save=True, test_one=None):
 	return bn
 	
 	
-if __name__ == "__main__":
-	import appex
-	files = []
-	if appex.is_running_extension():
-		files = [f for f in appex.get_file_paths() if f.endswith('.textbundle')]
-		
-	process_bear_backup()
+if __name__ == "__main__":	
+	process_bear_files()
