@@ -59,3 +59,8 @@ def call_bear(action, callback=None, **params):
 			if time() - t > 2:
 				raise ValueError(f"Can't get return from {url}, sem is {sem}")
 		return r
+		
+		
+		
+def is_bear_id(s):
+	return re.match("-".join(f'[a-fA-F0-9]{{{n}}}' for n in (8,4,4,4,12,5,16))+'$', s.strip())
