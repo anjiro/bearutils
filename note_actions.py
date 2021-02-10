@@ -70,7 +70,7 @@ class NoteActions(NotesProcessor):
 				if do == 'append':
 					print(f"append to {note.title}")
 					self.note_actions[note].append(lambda c:
-						re.subn('\n', what+'\n', c, count=1))
+						re.subn('\n', what+'\n', c, count=1)[0])
 				elif do == 'prepend':
 					self.note_actions[note].append(lambda c:
 						re.sub('^', what, c))
