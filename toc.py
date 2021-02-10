@@ -9,6 +9,8 @@ class TOC:
 			'toc_heading': '## Table of contents',
 			'toc_placeholder': '## TOC',   # Shorthand to indicate a place for a new TOC
 			'exclude_headers': [],
+			'min_level': 2,  #Don't add headers with < n #s; set to <= 0 for all
+			'max_level': 0,  # Same but don't add for more
 		}
 		self.options.update(options)
 		self.changed = {}
@@ -33,7 +35,7 @@ class TOC:
 		r = [self.options['toc_heading']]
 		for h in note.headers.values():
 			#Skip the TOC headers and any others requested
-			if h.header in excludes:
+			if h.header in excludes or (0 < self.options['min_level'] > h.level) or (0 < self.options['max_level'] < h.level):
 				continue
 				
 			r.append("\t"*(h.level-2) + f'* [{h.title}](bear://x-callback-url/open-note?id={note.id}&header={quote(h.title)})')
