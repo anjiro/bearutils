@@ -12,18 +12,28 @@ from time import time
 Header = namedtuple('Header', 'title level header match')
 
 
-#Regex to match tags; used as part of another regex so stored as a string here.
-tag_re = '(?<!#)#[^\s#](?:[^#\n]*(?<!\s)#|[^#\s]+)'
+#Regexes used as part of another regex so stored as a string here.
+tag_re = r'(?<!#)(?P<tag>#[^\s#][^#\n]*(?<!\s)#|#[^#\s]+)'
+header_re = r'^{}(?:[\t ]*\n)'
+title_re = r'(?:#*[\t ]+)?([^\n]+)(?:\n|$)'
+link_re = r'\[\[(?P<link>[^\s\]][^\]]*)(?<!\s)]]'
+
+def get_section(text, header, blank_lines_after_header=0):
+	"""Return the first paragraph after the given header or None of not found."""
+	header_finder = header_re.format(re.escape(header))
+	match = re.search(header_finder + '{{1,{nbl}}}(?:([^ \n].+?)(?=\n\n|\Z))?'.format(nbl=blank_lines_after_header+1), text, flags=re.DOTALL|re.MULTILINE)
+	if match:
+		return match.group(1)
 
 
 def replace_section(text, header, new_text='', blank_lines_after_header=0):
 	"""Replace header and a paragraph of text following the header. Optionally allow some number of empty lines between the header and the paragraph; set to a negative number to replace only the header, ignoring any following lines. Return tuple (the new note contents, the text that was replaced), or (self.contents, '') if the target section was not found. Note that this function does not modify the note contents, but returns a copy."""
-	header_finder = '^{}(?:[\t ]*\n)'.format(re.escape(header))
+	header_finder = header_re.format(re.escape(header))
 	if blank_lines_after_header < 0:
-		header_re = re.compile(header_finder, flags=re.MULTILINE)
-		match = header_re.search(text)
+		header_matcher = re.compile(header_finder, flags=re.MULTILINE)
+		match = header_matcher.search(text)
 		if match:
-			return header_re.sub(new_text+'\n', text), header
+			return header_matcher.sub(new_text+'\n', text), header
 	else:
 		matcher = re.compile(header_finder + '{{1,{nbl}}}(?:[^ \n].+?(?=\n\n|\Z))?'.format(
 			nbl=blank_lines_after_header+1), flags=re.DOTALL|re.MULTILINE)
