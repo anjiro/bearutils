@@ -3,8 +3,20 @@ import dateutil.parser
 import dialogs
 from zipfile import ZipFile
 from operator import attrgetter
-from utils import cidict, tag_re, Header, call_bear, is_bear_id
+from utils import *
 
+
+class NotesProcessor:
+	def process(self, notes):
+		"""Process `notes`, which is a dict of {title: Note} representing all of the Notes loaded by BearNotes. Do not make any changes to the Note contents, because they might be overwritten if the contents need to be fetched from Bear. Instead, save the changes, and return a dict of {Note: changed (True/False)}, or None if no changes will be made."""
+		raise NotImplementedError("Subclasses must implement process()")
+		
+		
+	def render(self, note):
+		"""This will be called once for each Note that process() indicates has changed. Return the new contents of the note."""
+		raise NotImplementedError("Subclasses must implement process()")
+		
+		
 
 class BearNotes:
 	"""Read and operate on collections of notes."""
@@ -29,6 +41,8 @@ class BearNotes:
 			print(f"{os.path.split(backup_file)[-1]} isn't a .bearbk file")
 			return
 			
+		self.filenames = [backup_file]
+			
 		notes = cidict()
 		with ZipFile(backup_file) as zip_file:
 			for fn in zip_file.namelist():
@@ -52,6 +66,7 @@ class BearNotes:
 		
 		
 	def read_textbundles(self, filenames):
+		self.filenames = filenames
 		notes = {}
 		for tb_path in filenames:
 			txtfn  = os.path.join(tb_path, 'text.markdown')
@@ -74,25 +89,29 @@ class BearNotes:
 		notes = {}
 		for nid in bear_ids:
 		 	info = call_bear('open-note', id=nid.strip())
-		 	if info.get('is_trashed', False) and self.skip_trashed:
+		 	print(f"got {nid}")
+		 	if info.get('is_trashed', 'no') == 'yes' and self.skip_trashed:
+		 		print(info)
 		 		continue
 		 	contents = info.pop('note')
 		 	del info['tags']
 		 	note = Note(info, contents)
 		 	notes[note.title] = note
+		print(f"fetched {notes}")
 		self.notes.update(notes)
 		 	
 		
 	def process_notes(self):
-		"""Process all the notes. First run group processors then single."""
+		"""Process all the notes."""
 		for p in self.processors:
 			changed = p.process(self.notes)
-			for note, did_change in changed.items():
-				if did_change:
-					note.get_note_contents_from_bear()
-					note.contents = p.render(note)
-					note.modified = True
-					
+			if changed is not None:
+				for note, did_change in changed.items():
+					if did_change:
+						note.get_note_contents_from_bear()
+						note.contents = p.render(note)
+						note.modified = True
+						
 					
 	def save_to_bear(self):
 		"""Save modified notes to Bear."""
@@ -158,7 +177,7 @@ class Note:
 			sys.stderr.write(f'Warning: no title for note ID {self.id}; contents:\n{self.orig_contents}\n')
 			self.title = None
 		else:
-			self.title  = re.match('(?:#*[\t ]+)?([^\n]+)\n', self.contents, re.DOTALL).group(1)
+			self.title = re.match(title_re, self.contents, re.DOTALL).group(1)
 				
 				
 	def extract_headers(self):
@@ -170,8 +189,13 @@ class Note:
 			
 			
 	def extract_tags(self):
-		"""Extract all tags from the note."""
-		self.tags = re.findall(tag_re, self.contents, flags=re.MULTILINE)
+		"""Extract all tags from the note, but not those inside backticks."""
+		self.tags = [tag.strip('#') for tag in re.findall(tag_re, self.contents)]
+		
+		
+	def extract_links(self):
+		"""Extract all tags from the note, but not those inside backticks."""
+		self.links = re.findall(link_re, self.contents)
 		
 
 	def get_note_contents_from_bear(self):
@@ -195,6 +219,7 @@ def process_bear_files(save=True, test_one=None):
 	import clipboard, console
 	from backlinker import Backlinker
 	from toc import TOC
+	from note_actions import NoteActions
 	
 	action = 2
 	cb = clipboard.get().split('\n')
@@ -219,6 +244,7 @@ def process_bear_files(save=True, test_one=None):
 			return
 		bn.register_processor(Backlinker())
 		bn.register_processor(TOC())
+		bn.register_processor(NoteActions())
 		bn.read_backup_file(backup_file)
 	
 	bn.process_notes()
