@@ -46,6 +46,8 @@ class NoteActions(NotesProcessor):
 	def render(self, note):
 		c = note.contents
 		for func in self.note_actions[note]:
+			print('action:')
+			print(c)
 			c = func(c)
 		return c
 		
@@ -56,7 +58,7 @@ class NoteActions(NotesProcessor):
 		
 
 	def append_prepend(self, match, notes):
-		do, to, tag, what = match.groups('do to tag what'.split())
+		do, to, tag, what = match.group(*'do to tag what'.split())
 		do = do.lower()
 		to = to.lower()
 		
@@ -64,7 +66,6 @@ class NoteActions(NotesProcessor):
 		
 		for note in notes.values():
 			if tag.strip('#') not in note.tags:
-				print(f"{tag.strip('#')} not in {note.tags}")
 				continue
 			if to == 'titles':
 				if do == 'append':
@@ -77,10 +78,7 @@ class NoteActions(NotesProcessor):
 						
 						
 	def search(self, match, notes):
-		import pickle
-		with(open('debug.pickle', 'w')) as f:
-			pickle.dump(match, f)
-		strike, term, where = match.group('strike term where'.split())
+		strike, term, where = match.group(*'strike term where'.split())
 		for note in notes.values():
 			if note.title == self.options['action_note']:
 				 continue
