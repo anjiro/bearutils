@@ -1,7 +1,7 @@
 import re
 from itertools import groupby
 from operator import itemgetter
-from utils import cidict, tag_re, replace_section
+from utils import cidict, tag_re, eoftags_re, replace_section
 
 class Backlinker:	
 	def __init__(self, **options):
@@ -25,7 +25,7 @@ class Backlinker:
 				self.options['backlinks_heading'], self.options['backlinks_heading'])
 				
 			#Save the old backlinks, minus the header, to compare with to determine if something has changed
-			old_backlinks[note] = re.sub(f'^{re.escape(self.options["backlinks_heading"])}[\t ]*\n', '', oldbl)
+			old_backlinks[note] = re.sub(rf'^{re.escape(self.options["backlinks_heading"])}[\t ]*\n', '', oldbl)
 			
 			for link, context in self.extract_links(text):
 				#If we can't find the link, see if it's a subheading link
@@ -67,15 +67,6 @@ class Backlinker:
 			return txt
 			
 		blh = self.options['backlinks_heading']
-		
-		if blh not in note.headers:
-			#No existing header. 
-			#If there are tags at the end of the note, put backlinks above
-			#match "#x#" and "#x x#" and "#x" but not "# #", "# x#", and just the first part of "#x #"
-			eoftags = re.search('\n[\t ]*(' + tag_re + '[\t ]*)+$', txt)
-			ip = eoftags.start() if eoftags else len(txt)
-			txt = '\n'.join((txt[:ip], '\n' + blh + '\n', txt[ip:]))
-		
 		return replace_section(txt, blh, f'{blh}\n{self.rendered_backlinks[note]}')[0]
 	
 
