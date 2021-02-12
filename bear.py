@@ -1,6 +1,7 @@
 import os, json, io, re
 import dateutil.parser
 import dialogs
+from datetime import datetime
 from zipfile import ZipFile
 from operator import attrgetter
 from utils import *
@@ -111,6 +112,8 @@ class BearNotes:
 						note.get_note_contents_from_bear()
 						note.contents = p.render(note)
 						note.modified = True
+						if note.title not in self.notes:
+							self.notes[note.title] = note
 						
 					
 	def save_to_bear(self):
@@ -127,25 +130,28 @@ class BearNotes:
 
 
 class Note:
-	def __init__(self, info, contents):
+	def __init__(self, info=None, contents=''):
 		self.modified = False
 		self.info = info
 		self.orig_contents = contents
 		self._contents = contents.strip()
 		
-		try:
-			self.id = self.info['uniqueIdentifier'] #In Bear backups
-		except KeyError:
-			self.id = self.info['identifier'] #From a call to open-note
+		if self.info:
+			try:
+				self.id = self.info['uniqueIdentifier'] #In Bear backups
+			except KeyError:
+				self.id = self.info['identifier'] #From a call to open-note
 		
-		for k,v in self.info.items():
-			if v and 'Date' in k:
-				self.info[k] = dateutil.parser.parse(v)
+			for k,v in self.info.items():
+				if v and 'Date' in k:
+					self.info[k] = dateutil.parser.parse(v)
+		else:
+			self.modificationDate = datetime.now()
+					
+			self.__dict__.update(self.info)
 		
 		#We need to get notes with images via x-callback to preserve the images
 		self.fetch_from_bear = '[assets/' in self.contents
-					 
-		self.__dict__.update(self.info)
 		
 		self.parse_title()
 		self.extract_headers()
@@ -173,7 +179,9 @@ class Note:
 	def parse_title(self):
 		#Bear uses the first line of a note as the title for linking
 		# purposes, regardless of heading markup
-		if re.match('[\t ]*\n', self.contents):
+		if not self.contents:
+			self.title = None
+		elif re.match('[\t ]*\n', self.contents):
 			sys.stderr.write(f'Warning: no title for note ID {self.id}; contents:\n{self.orig_contents}\n')
 			self.title = None
 		else:
@@ -194,7 +202,7 @@ class Note:
 		
 		
 	def extract_links(self):
-		"""Extract all tags from the note, but not those inside backticks."""
+		"""Extract all links from the note, but not those inside backticks."""
 		self.links = re.findall(link_re, self.contents)
 		
 
