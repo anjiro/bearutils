@@ -133,8 +133,9 @@ class Note:
 	def __init__(self, info=None, contents=''):
 		self.modified = False
 		self.info = info
+		self._contents = None
 		self.orig_contents = contents
-		self._contents = contents.strip()
+		self.contents = contents.strip()
 		
 		if self.info:
 			try:
@@ -153,10 +154,6 @@ class Note:
 		#We need to get notes with images via x-callback to preserve the images
 		self.fetch_from_bear = '[assets/' in self.contents
 		
-		self.parse_title()
-		self.extract_headers()
-		self.extract_tags()
-		
 		
 	def __repr__(self):
 		return '<{}: {}>'.format(__class__.__name__, self.title)
@@ -172,8 +169,10 @@ class Note:
 		"""Re-run extractors if something has changed."""
 		if contents != self.contents:
 			self._contents = contents
+			self.parse_title()
 			self.extract_headers()
 			self.extract_tags()
+			self.extract_links()
 		
 		
 	def parse_title(self):
@@ -203,7 +202,7 @@ class Note:
 		
 	def extract_links(self):
 		"""Extract all links from the note, but not those inside backticks."""
-		self.links = re.findall(link_re, self.contents)
+		self.links = re.findall(link_re, self.contents) or []
 		
 
 	def get_note_contents_from_bear(self):
