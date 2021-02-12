@@ -61,17 +61,19 @@ class NoteActions(NotesProcessor):
 		tag, dest = match.group(*'tag dest'.split())
 		existing_links = notes[dest].links if dest in notes else []
 		new_links = []
+		
 		for note in notes.values():
-			if tag.strip('#') not in note.tags or note.title == dest or note.title in existing_links:
-				continue
+			if tag.strip('#') not in note.tags: continue
+			if note.title == dest: continue
+			if note.title in existing_links: continue
 			new_links.append(note.title)
 			
-		links_body = '\n'.join([self.options['collect_section']] + [f'* [[{link}]]' for link in existing_links])
+		links_body = '\n'.join([self.options['collect_section']] + [f'* [[{link}]]' for link in new_links])
 		
 		if dest in notes:
 			note = notes[dest]
 			self.note_actions[note].append(lambda c:
-				replace_section(c, self.options['collect_section'], links_body)[0])
+				replace_section(c, self.options['collect_section'], links_body, before="## Backlinks")[0])
 		else:
 			note = Note(contents=f"# {dest}\n{text}")
 			self.note_actions[note].append(lambda c: c)
@@ -93,7 +95,7 @@ class NoteActions(NotesProcessor):
 				elif do == 'prepend':
 					self.note_actions[note].append(lambda c:
 						re.sub('^', what, c))
-				elif do == 'remove' and re.match(rf'^(?:{what}|[^\n]+{what}\n)'):
+				elif do == 'remove' and re.match(rf'^(?:{what}|[^\n]+{what}\n)', note.title):
 					self.note_actions[note].append(lambda c:
 						re.sub(rf'^(?:{what}|([^\n]+){what}(?=\n))', r'\1', c))
 						
