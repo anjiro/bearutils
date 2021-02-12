@@ -51,7 +51,7 @@ class Backlinker:
 		r = []
 		#If the context and the title are the same, don't print the context
 		tm = re.compile(
-			'{}\s*[.?!]'.format(re.escape(f'[[{note.title}]]')), re.IGNORECASE)
+			'{}\s*[.?!]?'.format(re.escape(f'[[{note.title}]]')), re.IGNORECASE)
 		for bn, g in self.backlinks[note.title].items():
 			s = f'* [[{bn.title}]]'
 			for context in g:
