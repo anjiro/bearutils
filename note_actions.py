@@ -1,7 +1,6 @@
 from bear import NotesProcessor
 from utils import *
 from collections import defaultdict
-import inspect
 
 
 class NoteActions(NotesProcessor):
@@ -41,8 +40,7 @@ class NoteActions(NotesProcessor):
 			for matcher, func in self.actions.items():
 				match = matcher.search(action)
 				if match:
-					print(match, match.groupdict())
-					func(match, notes)
+					func(notes, **match.groupdict())
 				
 		# Don't make changes to the action file
 		return {note: True for note in self.note_actions if note.title != self.options['always_section']}
@@ -51,14 +49,12 @@ class NoteActions(NotesProcessor):
 	def render(self, note):
 		c = note.contents
 		for func in self.note_actions[note]:
-			print(f'{note.title}: {inspect.getsource(func)}')
 			c = func(c)
 		return c
 		
 		
-	def collect(self, match, notes):
+	def collect(self, notes, tag, dest):
 		#Here we might make a new note with no id and add it to note actions
-		tag, dest = match.group(*'tag dest'.split())
 		existing_links = notes[dest].links if dest in notes else []
 		new_links = []
 		
@@ -79,8 +75,7 @@ class NoteActions(NotesProcessor):
 			self.note_actions[note].append(lambda c: c)
 			
 
-	def append_prepend(self, match, notes):
-		do, to, tag, what = match.group(*'do to tag what'.split())
+	def append_prepend(self, notes, do, to, tag, what):
 		do = do.lower()
 		to = to.lower()
 		
@@ -100,8 +95,7 @@ class NoteActions(NotesProcessor):
 						re.sub(rf'^(?:{what}|([^\n]+){what}(?=\n))', r'\1', c))
 						
 						
-	def search(self, match, notes):
-		strike, term, where = match.group(*'strike term where'.split())
+	def search(self, notes, strike, term, where):
 		for note in notes.values():
 			if note.title == self.options['action_note']:
 				 continue
