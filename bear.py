@@ -6,6 +6,12 @@ from zipfile import ZipFile
 from operator import attrgetter
 from utils import *
 
+#TODO: use to implement link extractor, summary extractor, etc
+class NoteProcessor:
+	def process(self, note):
+		"""Modify the passed note. Return True if successful."""
+		raise NotImplementedError("Subclasses must implement process()")
+
 
 class NotesProcessor:
 	def process(self, notes):
@@ -220,6 +226,16 @@ class Note:
 		else:
 			call_bear('create', text=self.contents)
 		
+		
+def fetch_note(id):
+	"""Fetch the given note and return a Note object."""
+	if not is_bear_id(id):
+		raise ValueError("Not a valid Bear note ID")
+	info = call_bear('open-note', id=id)
+	contents = info.pop('note')
+	note = Note(info, contents)
+	note.fetch_from_bear = False
+	return note
 		
 		
 def process_bear_files(save=True, test_one=None):
