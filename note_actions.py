@@ -7,9 +7,7 @@ class NoteActions(NotesProcessor):
 	def __init__(self, **options):
 		self.options = {
 			'action_note': 'Bearutils actions',
-			'always_section': '## Always',
-			'search_section': '## Searches',
-			'clear_section': '### Uncheck to clear highlights',
+			'action_section': '## Actions',
 			'collect_section': '## Collected notes',
 		}
 		self.options.update(options)
@@ -35,7 +33,7 @@ class NoteActions(NotesProcessor):
 			
 		print("ok")
 
-		for action in get_section(an.contents, self.options['always_section']).splitlines():
+		for action in get_section(an.contents, self.options['action_section']).splitlines():
 			print(action)
 			for matcher, func in self.actions.items():
 				match = matcher.search(action)
@@ -43,7 +41,7 @@ class NoteActions(NotesProcessor):
 					func(notes, **match.groupdict())
 				
 		# Don't make changes to the action file
-		return {note: True for note in self.note_actions if note.title != self.options['always_section']}
+		return {note: True for note in self.note_actions if note.title != self.options['action_section']}
 		
 		
 	def render(self, note):
