@@ -3,3 +3,10 @@
 * Reference utility
   * Parse references sections to find refs that are present in many notes but have no lit note or have a lit note but aren't linked to it
   *  Fix DOI links
+* Global options specified in Bear note; then we can exclude backlinks from link finder and collector, and not include options note in backlinks
+* Handle \s in titles: Bear auto completes titles in links with an escaped backslash: 'AND\/OR'
+* Extract summaries marked in some way when collecting, or otherwise
+* Look for "[[literature note 📔]] ->" and insert summary
+* Also offer action to summarize all literature notes in a given note or tag
+*  Share note id to search
+*   Increase or decrease heading levels; need interactive ui
