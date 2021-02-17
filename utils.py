@@ -19,12 +19,42 @@ title_re = r'(?:#*[\t ]+)?([^\n]+)[\t ]*(?:\n|$)'
 link_re = r'\[\[(?P<link>[^\s\]][^\]]*)(?<!\s)]]'
 eoftags_re = r'\n[\t ]*(' + tag_re + r'[\t ]*)+$'
 
-def get_section(text, header, blank_lines_after_header=0):
+
+def get_section(text, header, blank_lines_after_header=0, include_subsections=False):
 	"""Return the first paragraph after the given header or None of not found."""
 	header_finder = header_re.format(re.escape(header))
-	match = re.search(header_finder + '{{1,{nbl}}}(?:([^ \n].+?)(?=\n\n|\Z))?'.format(nbl=blank_lines_after_header+1), text, flags=re.DOTALL|re.MULTILINE)
+	if include_subsections:
+		level = len(header) - len(header.lstrip('#'))
+		match = re.search(header_finder + '(.*?)(?=^{"#"*level}[\t ]+|\Z)', text, flags=re.DOTALL|re.MULTILINE)
+	else:
+		match = re.search(header_finder + '{{1,{nbl}}}(?:([^ \n].+?)(?=\n\n|\Z))?'.format(nbl=blank_lines_after_header+1), text, flags=re.DOTALL|re.MULTILINE)
+		
 	if match:
 		return match.group(1)
+		
+		
+def get_options(text, options_header='## Options'):
+	import configparser
+	level = len(options_header) - len(options_header.lstrip('#'))
+	cp = configparser.ConfigParser(
+		comment_prefixes=[";"],
+		interpolation=configparser.ExtendedInterpolation(),
+		converters={'list': lambda l: re.split('[\t ]*,[\t ]*', l)})
+	cp.SECTCRE = re.compile('#'*(level+1) + '[\t ]+(?P<header>.+)[\t ]*')
+	
+	opt_text = get_section(text, options_header, include_subsections=True)
+	if not opt_text:
+		raise ValueError(f"Can't find section: {options_header}")
+		
+	# Assume anything not a heading o ra bullet point is a comment
+	opt_text = re.sub('^(?=[^\s#*])', ';', opt_text, flags=re.MULTILINE)
+	
+	# Remove bullet points
+	opt_text = re.sub('^\*[\t ]', '', opt_text, flags=re.MULTILINE)
+	
+	cp.read_string(opt_text)
+	
+	return cp
 
 
 def replace_section(text, header, new_text='', blank_lines_after_header=0, before=None):
@@ -83,7 +113,6 @@ def call_bear(action, callback=None, **params):
 			if time() - t > 2:
 				raise ValueError(f"Can't get return from {url}, sem is {sem}")
 		return r
-		
 		
 		
 def is_bear_id(s):
