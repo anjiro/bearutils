@@ -8,7 +8,7 @@ class NoteActions(NotesProcessor):
 		self.options = {
 			'action_note': 'Bearutils actions',
 			'action_section': '## Actions',
-			'collect_section': '## Collected notes',
+			'collect_section_title': '## Collected notes',
 		}
 		self.options.update(options)
 		self.note_actions = defaultdict(list)
@@ -62,12 +62,12 @@ class NoteActions(NotesProcessor):
 			if note.title in existing_links: continue
 			new_links.append(note.title)
 			
-		links_body = '\n'.join([self.options['collect_section']] + [f'* [[{link}]]' for link in new_links])
+		links_body = '\n'.join([self.options['collect_section_title']] + [f'* [[{link}]]' for link in new_links])
 		
 		if dest in notes:
 			note = notes[dest]
 			self.note_actions[note].append(lambda c:
-				replace_section(c, self.options['collect_section'], links_body, before="## Backlinks")[0])
+				replace_section(c, self.options['collect_section_title'], links_body, before="## Backlinks")[0])
 		else:
 			note = Note(contents=f"# {dest}\n{text}")
 			self.note_actions[note].append(lambda c: c)
