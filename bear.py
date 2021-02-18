@@ -9,7 +9,7 @@ from utils import *
 #TODO: use to implement link extractor, summary extractor, etc
 class NoteProcessor:
 	def process(self, note):
-		"""Modify the passed note. Return True if successful."""
+		"""Modify the passed note. Return True if modified."""
 		raise NotImplementedError("Subclasses must implement process()")
 
 
@@ -239,24 +239,42 @@ def fetch_note(id):
 		
 		
 def process_bear_files(save=True, test_one=None):
-	import clipboard, console
-	from backlinker import Backlinker
-	from toc import TOC
-	from note_actions import NoteActions
+	import clipboard, console, configparser
+	from importlib import import_module
 	
+	#Determine where in options to get note processors to load based on the response to the dialog
+	action_processors = (
+		'some_processors',
+		'all_processors',
+	)
+	
+	#Default action
 	action = 2
+	
+	options = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation(),
+		converters={'list': lambda l: re.split('[\t ]*,[\t ]*', l)})
+	options.read('options.ini')
+	
 	cb = clipboard.get().split('\n')
 	if all(is_bear_id(l) for l in cb):
 		try:
-			action = console.alert('BearUtils', 'I found possible Bear Note IDs on the clipboard. What do you want to do?', 'Use IDs from clipboard', 'Select a Bear backup file')
-		except KeyboardInterrupt:
+			action = console.alert('BearUtils', 'I found possible Bear Note IDs on the clipboard. What do you want to do?', 
+				'Use IDs from clipboard', # action = 1
+				'Select a Bear backup file', # action = 2
+			)
+		except KeyboardInterrupt: # cancelled
 			return
 	
 	bn = BearNotes()
 	
+	#Load the specified processors with their defined options
+	for processor in options['Processors'].getlist(action_processors[action-1]):
+		processor_module = import_module(options[processor]['module'])
+		processor_class = getattr(processor_module, processor)
+		bn.register_processor(processor_class(**{k: convert_string(v) for k,v in options[processor].items()}))
+		
 	if action == 1:
 		bn.fetch_from_bear(cb)
-		bn.register_processor(TOC())
 	elif action == 2:
 		#Run normally
 		backup_file = dialogs.pick_document(types=['public.item'])
@@ -265,9 +283,6 @@ def process_bear_files(save=True, test_one=None):
 		if os.path.splitext(backup_file)[1] != '.bearbk':
 			print(f"{os.path.split(backup_file)[-1]} isn't a .bearbk file")
 			return
-		bn.register_processor(Backlinker())
-		bn.register_processor(TOC())
-		bn.register_processor(NoteActions())
 		bn.read_backup_file(backup_file)
 	
 	bn.process_notes()
