@@ -33,6 +33,26 @@ def get_section(text, header, blank_lines_after_header=0, include_subsections=Fa
 		return match.group(1)
 		
 		
+def convert_string(s):
+	"""Try to parse the string in a useful way. Used for reading the config file."""
+	if not isinstance(s, str):
+		return s
+	if s == 'True':
+		return True
+	if s == 'False':
+		return False
+	if ',' in s:
+		return [convert_string(p) for p in re.split('[\t ]*,[\t ]*', s)]
+	try:
+		return int(s)
+	except ValueError:
+		try:
+			return float(s)
+		except:
+			return s
+	return s
+		
+		
 def get_options(text, options_header='## Options'):
 	import configparser
 	level = len(options_header) - len(options_header.lstrip('#'))
