@@ -1,9 +1,10 @@
 import re
 from urllib.parse import quote
 from utils import replace_section
+from bear import NotesProcessor
 
 
-class TOC:
+class TOC(NotesProcessor):
 	def __init__(self, **options):
 		self.options = {
 			'toc_heading': '## Table of contents',
@@ -15,6 +16,8 @@ class TOC:
 		self.options.update(options)
 		self.changed = {}
 		self.rendered_tocs = {}
+		
+
 
 	def process(self, notes):
 		for note in notes.values():

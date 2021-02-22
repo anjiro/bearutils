@@ -1,9 +1,10 @@
 import re
+from bear import NotesProcessor
 from itertools import groupby
 from operator import itemgetter
 from utils import cidict, tag_re, eoftags_re, replace_section
 
-class Backlinker:	
+class Backlinker(NotesProcessor):
 	def __init__(self, **options):
 		self.options = {
 			'backlinks_heading': '## Backlinks',
