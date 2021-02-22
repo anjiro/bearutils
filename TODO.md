@@ -8,5 +8,7 @@
 * Extract summaries marked in some way when collecting, or otherwise
 * Look for "[[literature note 📔]] ->" and insert summary
 * Also offer action to summarize all literature notes in a given note or tag
-*  Share note id to search
-*   Increase or decrease heading levels; need interactive ui
+* Share note id to search; option to make links at top to jump to sections with highlighted results
+* Some kind of state storage, eg for clearing search results on second sharing
+* Increase or decrease heading levels; need interactive ui
+* Find isolated DOIs on page and replace with references

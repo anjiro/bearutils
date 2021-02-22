@@ -6,12 +6,6 @@ from zipfile import ZipFile
 from operator import attrgetter
 from utils import *
 
-#TODO: use to implement link extractor, summary extractor, etc
-class NoteProcessor:
-	def process(self, note):
-		"""Modify the passed note. Return True if modified."""
-		raise NotImplementedError("Subclasses must implement process()")
-
 
 class NotesProcessor:
 	def process(self, notes):
@@ -21,7 +15,11 @@ class NotesProcessor:
 		
 	def render(self, note):
 		"""This will be called once for each Note that process() indicates has changed. Return the new contents of the note."""
-		raise NotImplementedError("Subclasses must implement process()")
+		raise NotImplementedError("Subclasses must implement render()")
+		
+		
+	def __repr__(self):
+		 return f"<{self.__class__.__name__}>"
 		
 		
 
@@ -227,11 +225,11 @@ class Note:
 			call_bear('create', text=self.contents)
 		
 		
-def fetch_note(id):
+def fetch_note(**params):
 	"""Fetch the given note and return a Note object."""
-	if not is_bear_id(id):
+	if 'id' in params and not is_bear_id(params['id']):
 		raise ValueError("Not a valid Bear note ID")
-	info = call_bear('open-note', id=id)
+	info = call_bear('open-note', **params)
 	contents = info.pop('note')
 	note = Note(info, contents)
 	note.fetch_from_bear = False
@@ -242,41 +240,67 @@ def process_bear_files(save=True, test_one=None):
 	import clipboard, console, configparser
 	from importlib import import_module
 	
+	# Actions
+	ACTION_IDS = 1
+	ACTION_BATCH = 2
+	
 	#Determine where in options to get note processors to load based on the response to the dialog
-	action_processors = (
-		'some_processors',
-		'all_processors',
-	)
+	action_processors = {
+		ACTION_IDS: 'some_processors',
+		ACTION_BATCH: 'all_processors',
+	}
 	
 	#Default action
-	action = 2
+	action = ACTION_BATCH
 	
 	options = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation(),
 		converters={'list': lambda l: re.split('[\t ]*,[\t ]*', l)})
 	options.read('options.ini')
 	
+	def ids_or_batch():
+		return console.alert('BearUtils', 
+			'I found possible Bear Note IDs on the clipboard. What do you want to do?', 
+			'Use IDs from clipboard', # action = ACTION_IDS
+			'Select a Bear backup file', # action = ACTION_BATCH
+		)
+		
+			
+	def id_action():
+		return console.alert('Bearutils',
+		
+		)
+	
 	cb = clipboard.get().split('\n')
 	if all(is_bear_id(l) for l in cb):
-		try:
-			action = console.alert('BearUtils', 'I found possible Bear Note IDs on the clipboard. What do you want to do?', 
-				'Use IDs from clipboard', # action = 1
-				'Select a Bear backup file', # action = 2
-			)
-		except KeyboardInterrupt: # cancelled
+		action = ids_or_batch()
+		if action < 0:
 			return
+			
+		#if action == ACTION_IDS:
+		#try:
+			
+	#Load from options the set of processors to run for the chosen action
+	processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
+	
+	#Set up any actions requested in the Bearutils actions note
+	if action == ACTION_BATCH and 'NoteActions' in options:
+		actions_note = fetch_note(title=options['NoteActions']['actions_note'])
+		for _class, opts in load_classes_from_options(options, options['NoteActions'].getlist('classes'), instantiate=False):
+			for matcher in _class.action_matchers:
+				for match in matcher.finditer(actions_note.contents):
+					opts_copy = dict(opts)
+					opts_copy.update(match.groupdict())
+					processors.append(_class(**opts_copy))
 	
 	bn = BearNotes()
 	
 	#Load the specified processors with their defined options
-	for processor in options['Processors'].getlist(action_processors[action-1]):
-		processor_module = import_module(options[processor]['module'])
-		processor_class = getattr(processor_module, processor)
-		bn.register_processor(processor_class(**{k: convert_string(v) for k,v in options[processor].items()}))
+	for processor in processors:
+		bn.register_processor(processor)
 		
-	if action == 1:
+	if action == ACTION_IDS:
 		bn.fetch_from_bear(cb)
-	elif action == 2:
-		#Run normally
+	elif action == ACTION_BATCH:
 		backup_file = dialogs.pick_document(types=['public.item'])
 		if not backup_file:
 			return

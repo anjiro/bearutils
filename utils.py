@@ -3,6 +3,7 @@ import x_callback_url
 from requests.structures import CaseInsensitiveDict as cidict
 from collections import namedtuple
 from time import time
+from importlib import import_module
 
 # "## A section title" ->
 # title: "A section title"
@@ -137,3 +138,24 @@ def call_bear(action, callback=None, **params):
 		
 def is_bear_id(s):
 	return re.match("-".join(f'[a-fA-F0-9]{{{n}}}' for n in (8,4,4,4,12,5,16))+'$', s.strip())
+	
+	
+def load_classes_from_options(options, sections, instantiate=True, module_dir='processors', **kwargs):
+	"""Pass a configparser object and a list of sections. Each section should have a "module" option with a module containing a class with the same name as the section.
+	If "instantiate" is True:
+		Return an instance of that class with the options in that section used as keyword arguments to the module, with an additional "all_options" argument containing the options object. Provide kwargs to add/replace keyword arguments.
+	If "instantiate" is False:
+		Return a list of (the class object, a dict of the options).
+	"""
+	r = []
+	for classname in sections:
+		module = import_module(f"{module_dir}.{options[classname]['module']}")
+		_class = getattr(module, classname)
+		class_opts = {k: convert_string(v) for k,v in options[classname].items()}
+		class_opts.update(kwargs)
+		class_opts['all_options'] = options
+		if instantiate:
+			r.append(_class(**class_opts))
+		else:
+			r.append((_class, class_opts))
+	return r
