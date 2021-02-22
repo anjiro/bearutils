@@ -131,7 +131,7 @@ def call_bear(action, callback=None, **params):
 	if callback is None:
 		t = time()
 		while not sem:
-			if time() - t > 2:
+			if time() - t > 4:
 				raise ValueError(f"Can't get return from {url}, sem is {sem}")
 		return r
 		
