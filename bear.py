@@ -265,9 +265,12 @@ def process_bear_files(save=True, test_one=None):
 		)
 		
 			
-	def id_action():
-		return console.alert('Bearutils',
+	def id_action(note_processors):
+		"""Pass a list of possible note processors that the user can choose from."""
 		
+		return dialogs.form_dialog('Bearutils', sections=[
+			'What to do with each Note?',
+			
 		)
 	
 	cb = clipboard.get().split('\n')
@@ -275,9 +278,6 @@ def process_bear_files(save=True, test_one=None):
 		action = ids_or_batch()
 		if action < 0:
 			return
-			
-		#if action == ACTION_IDS:
-		#try:
 			
 	#Load from options the set of processors to run for the chosen action
 	processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
