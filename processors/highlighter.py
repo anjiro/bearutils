@@ -17,6 +17,10 @@ class Highlighter(NotesProcessor):
 		}
 		self.options.update(options)
 		self.note_actions = defaultdict(list)
+		self.settings = self.__class__.__name__, [
+			dict(title='Enable', key='enable', type='switch'),
+			dict(title='Search for: ', key='term', type='text')
+			dict(title='Remove highlights?', key='remove', type='switch')
 		
 		
 	def process(self, notes):
