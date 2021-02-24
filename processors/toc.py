@@ -18,7 +18,6 @@ class TOC(NotesProcessor):
 		self.rendered_tocs = {}
 		
 
-
 	def process(self, notes):
 		for note in notes.values():
 			self.changed[note] = self.render_toc(note)
