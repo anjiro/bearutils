@@ -7,20 +7,20 @@ class Highlighter(NotesProcessor):
 	#To match this action in the Bearutils note
 	action_matchers = [re.compile('^\*[\t ]+(?P<remove>-?)::(?<![\t ])(?P<term>.+)(?!=[\t ])::(?P=remove)[\t ]+in[\t ]+(?P<where>everywhere|`?(?<!#)#[^[\t ]#](?:[^#\n]*(?<![\t ])#|[^#[\t ]]+)`?|\[\[.+?]][\t ]*$)', flags=re.I|re.M)]
 	
-	def __init__(self, **options):
+	def __init__(self,
+		term:{'type': 'text', 'title': 'Search for: ', 'placeholder': 'search term'},
+		remove:{'type': 'switch', 'title': 'Remove highlights?', 'value': False},
+		where='everywhere',
+		**options):
 		"""Highlight or remove highlights matching a search term. Arguments:
 			term: the search term
 			where: a tag, note title, or "everywhere"
 			remove: if True, remove highlights matching the search term
 		"""
-		self.options = {
-		}
+		self.options = locals()
+		self.options.pop('options')
 		self.options.update(options)
 		self.note_actions = defaultdict(list)
-		self.settings = self.__class__.__name__, [
-			dict(title='Enable', key='enable', type='switch'),
-			dict(title='Search for: ', key='term', type='text')
-			dict(title='Remove highlights?', key='remove', type='switch')
 		
 		
 	def process(self, notes):
