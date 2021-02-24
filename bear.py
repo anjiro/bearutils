@@ -4,6 +4,7 @@ import dialogs
 from datetime import datetime
 from zipfile import ZipFile
 from operator import attrgetter
+from collections import defaultdict
 from utils import *
 
 
@@ -239,6 +240,7 @@ def fetch_note(**params):
 def process_bear_files(save=True, test_one=None):
 	import clipboard, console, configparser
 	from importlib import import_module
+	import sys
 	
 	# Actions
 	ACTION_IDS = 1
@@ -263,34 +265,55 @@ def process_bear_files(save=True, test_one=None):
 			'Use IDs from clipboard', # action = ACTION_IDS
 			'Select a Bear backup file', # action = ACTION_BATCH
 		)
-		
-			
-	def id_action(note_processors):
-		"""Pass a list of possible note processors that the user can choose from."""
-		
-		return dialogs.form_dialog('Bearutils', sections=[
-			'What to do with each Note?',
-			
-		)
 	
 	cb = clipboard.get().split('\n')
 	if all(is_bear_id(l) for l in cb):
 		action = ids_or_batch()
 		if action < 0:
 			return
-			
-	#Load from options the set of processors to run for the chosen action
-	processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
 	
-	#Set up any actions requested in the Bearutils actions note
-	if action == ACTION_BATCH and 'NoteActions' in options:
-		actions_note = fetch_note(title=options['NoteActions']['actions_note'])
-		for _class, opts in load_classes_from_options(options, options['NoteActions'].getlist('classes'), instantiate=False):
-			for matcher in _class.action_matchers:
-				for match in matcher.finditer(actions_note.contents):
-					opts_copy = dict(opts)
-					opts_copy.update(match.groupdict())
-					processors.append(_class(**opts_copy))
+	processors = []
+	
+	if action == ACTION_BATCH:
+		processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
+		if 'NoteActions' in options:
+			#Set up any actions requested in the Bearutils actions note
+			actions_note = fetch_note(title=options['NoteActions']['actions_note'])
+			#Load the classes specified in the config file for the Action note
+			for _class, opts in load_classes_from_options(options, options['NoteActions'].getlist('classes'), instantiate=False):
+				for matcher in _class.action_matchers:
+					for match in matcher.finditer(actions_note.contents):
+						opts_copy = dict(opts)
+						opts_copy.update(match.groupdict())
+						processors.append(_class(**opts_copy))
+			
+	#Generate a dialog to offer options based on the annotated init function for each class defined in the config file			
+	elif action == ACTION_IDS:
+		classopts = {}
+		forms = []
+		#Load but don't instantiate classes. Get options from the user, then instantiate with those options.
+		classes = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]), instantiate=False)
+		for _class, opts in classes:
+			classname = _class.__name__
+			classopts[classname] = opts
+			items = [dict(title='Enable', type='switch', key=classname+'!enable', value=classopts.get('default_to_enabled', True))]
+			for arg, ann in _class.__init__.__annotations__.items():
+				_type, text = ann
+				items.append(dict(title=text, type=_type, key=classname+'!'+arg))
+			forms.append((classname, items))
+		try:
+			user_opts = dialogs.form_dialog(sections=forms)
+		except KeyboardInterrupt:
+			return
+		if not user_opts:
+			return 
+		
+		for k,v in user_opts.items():
+			classname, arg = k.split("!")
+			classopts[classname][arg] = v
+			
+		for _class, _ in classes:
+			processors.append(_class(**classopts[_class.__class__.__name__]))
 	
 	bn = BearNotes()
 	
@@ -301,8 +324,11 @@ def process_bear_files(save=True, test_one=None):
 	if action == ACTION_IDS:
 		bn.fetch_from_bear(cb)
 	elif action == ACTION_BATCH:
+		print('pick')
 		backup_file = dialogs.pick_document(types=['public.item'])
+		print(f'backup file {backup_file}')
 		if not backup_file:
+			print('exit')
 			return
 		if os.path.splitext(backup_file)[1] != '.bearbk':
 			print(f"{os.path.split(backup_file)[-1]} isn't a .bearbk file")
