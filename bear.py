@@ -129,8 +129,12 @@ class BearNotes:
 			#Textbundle exports don't have timestamps
 			save_order = self.notes.values()
 		for note in save_order:
+			print(note)
 			if note.modified:
+				print('saved')
 				note.save_to_bear()
+			else:
+				print(f"{note} not modified")
 				
 
 
@@ -297,23 +301,25 @@ def process_bear_files(save=True, test_one=None):
 			classname = _class.__name__
 			classopts[classname] = opts
 			items = [dict(title='Enable', type='switch', key=classname+'!enable', value=classopts.get('default_to_enabled', True))]
-			for arg, ann in _class.__init__.__annotations__.items():
-				_type, text = ann
-				items.append(dict(title=text, type=_type, key=classname+'!'+arg))
+			for arg_name, ann in _class.__init__.__annotations__.items():
+				ann['key'] = classname+'!'+arg_name
+				items.append(ann)
 			forms.append((classname, items))
 		try:
 			user_opts = dialogs.form_dialog(sections=forms)
 		except KeyboardInterrupt:
 			return
 		if not user_opts:
-			return 
+			return
 		
 		for k,v in user_opts.items():
 			classname, arg = k.split("!")
 			classopts[classname][arg] = v
 			
 		for _class, _ in classes:
-			processors.append(_class(**classopts[_class.__class__.__name__]))
+			classname = _class.__name__
+			if classopts[classname]['enable']:
+				processors.append(_class(**classopts[classname]))
 	
 	bn = BearNotes()
 	
@@ -324,11 +330,8 @@ def process_bear_files(save=True, test_one=None):
 	if action == ACTION_IDS:
 		bn.fetch_from_bear(cb)
 	elif action == ACTION_BATCH:
-		print('pick')
 		backup_file = dialogs.pick_document(types=['public.item'])
-		print(f'backup file {backup_file}')
 		if not backup_file:
-			print('exit')
 			return
 		if os.path.splitext(backup_file)[1] != '.bearbk':
 			print(f"{os.path.split(backup_file)[-1]} isn't a .bearbk file")
@@ -342,6 +345,8 @@ def process_bear_files(save=True, test_one=None):
 			bn[test_one].save_to_bear()
 		else:
 			bn.save_to_bear()
+	else:
+		print('Warning: save is False')
 	
 	return bn
 	
