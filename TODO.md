@@ -12,3 +12,5 @@
 * Some kind of state storage, eg for clearing search results on second sharing
 * Increase or decrease heading levels; need interactive ui
 * Find isolated DOIs on page and replace with references
+* Move tags at the bottom to the top
+* Collect multiple tags
