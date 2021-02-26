@@ -300,7 +300,7 @@ def process_bear_files(save=True, test_one=None):
 		for _class, opts in classes:
 			classname = _class.__name__
 			classopts[classname] = opts
-			items = [dict(title='Enable', type='switch', key=classname+'!enable', value=classopts.get('default_to_enabled', True))]
+			items = [dict(title='Enable', type='switch', key=classname+'!enable', value=opts.get('default_to_enabled', True))]
 			for arg_name, ann in _class.__init__.__annotations__.items():
 				ann['key'] = classname+'!'+arg_name
 				items.append(ann)
