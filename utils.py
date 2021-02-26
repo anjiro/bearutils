@@ -4,6 +4,7 @@ from requests.structures import CaseInsensitiveDict as cidict
 from collections import namedtuple
 from time import time
 from importlib import import_module
+from regexes import *
 
 # "## A section title" ->
 # title: "A section title"
@@ -11,14 +12,6 @@ from importlib import import_module
 # header: "## A section title"
 # match: a re.match object
 Header = namedtuple('Header', 'title level header match')
-
-
-#Regexes used as part of another regex so stored as a string here.
-tag_re = r'(?<!#)(?P<tag>#[^\s#][^#\n]*(?<!\s)#|#[^#\s]+)'
-header_re = r'^{}(?:[\t ]*\n)'
-title_re = r'(?:#*[\t ]+)?([^\n]+)[\t ]*(?:\n|$)'
-link_re = r'\[\[(?P<link>[^\s\]][^\]]*)(?<!\s)]]'
-eoftags_re = r'\n[\t ]*(' + tag_re + r'[\t ]*)+$'
 
 
 def get_section(text, header, blank_lines_after_header=0, include_subsections=False):
@@ -80,7 +73,7 @@ def get_options(text, options_header='## Options'):
 
 def replace_section(text, header, new_text='', blank_lines_after_header=0, before=None):
 	"""Replace header and a paragraph of text following the header. Optionally allow some number of empty lines between the header and the paragraph; set to a negative number to replace only the header, ignoring any following lines. If the header was not found, add it above "before" or to the end of the note, but above any tags. Return tuple (the new note contents, the text that was replaced), or (self.contents, '') if the target section was not found. Note that this function does not modify the note contents, but returns a copy."""
-	header_finder = header_re.format(re.escape(header))
+	header_finder = header_re.format(header=re.escape(header))
 	if blank_lines_after_header < 0:
 		header_matcher = re.compile(header_finder, flags=re.MULTILINE)
 		match = header_matcher.search(text)
