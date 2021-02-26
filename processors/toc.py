@@ -1,6 +1,6 @@
 import re
 from urllib.parse import quote
-from utils import replace_section
+from utils import replace_section, Header
 from bear import NotesProcessor
 
 
