@@ -17,8 +17,7 @@ class Highlighter(NotesProcessor):
 			where: a tag, note title, or "everywhere"
 			remove: if True, remove highlights matching the search term
 		"""
-		self.options = locals()
-		self.options.pop('options')
+		self.options = {'term': term, 'remove': remove, 'where': where}
 		self.options.update(options)
 		self.note_actions = defaultdict(list)
 		
