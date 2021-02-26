@@ -14,3 +14,5 @@
 * Find isolated DOIs on page and replace with references
 * Move tags at the bottom to the top
 * Collect multiple tags
+* Option to remove all highlighting
+* Search and replace, including quick common actions defined in options.ini. Possible to do interactive with highlighting? Not without special purpose UI.
