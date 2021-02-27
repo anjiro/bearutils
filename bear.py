@@ -30,8 +30,7 @@ def process_bear_files(save=True, test_one=None):
 		converters={'list': lambda l: re.split('[\t ]*,[\t ]*', l)})
 	options.read('options.ini')
 	
-	
-	
+	#If there are Bear note IDs on the clipboard, prompt whether to use them or load a backup file
 	cb = clipboard.get().split('\n')
 	if all(is_bear_id(l) for l in cb):
 		action = ids_or_batch()
@@ -40,6 +39,7 @@ def process_bear_files(save=True, test_one=None):
 	
 	processors = []
 	
+	#Processa a Bear backup file
 	if action == ACTION_BATCH:
 		processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
 		if 'NoteActions' in options:
@@ -53,12 +53,13 @@ def process_bear_files(save=True, test_one=None):
 						opts_copy.update(match.groupdict())
 						processors.append(_class(**opts_copy))
 			
-	#Generate a dialog to offer options based on the annotated init function for each class defined in the config file			
+	#Work with one or more notes based on IDs		
 	elif action == ACTION_IDS:
 		classopts = {}
 		forms = []
 		#Load but don't instantiate classes. Get options from the user, then instantiate with those options.
 		classes = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]), instantiate=False)
+		#Generate a dialog to offer options based on the annotated init function for each class defined in the config file	
 		for _class, opts in classes:
 			classname = _class.__name__
 			classopts[classname] = opts
