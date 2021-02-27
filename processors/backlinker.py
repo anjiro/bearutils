@@ -20,6 +20,7 @@ class Backlinker(NotesProcessor):
 		self.rendered_backlinks = {}
 		old_backlinks = {}
 		
+		#For each note, find the other notes it links to
 		for note in notes.values():
 			#Remove backlinks so we don't find links in it. Keep heading.
 			text, oldbl = replace_section(note.contents,
