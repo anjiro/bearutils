@@ -13,8 +13,12 @@ class TagMover(NotesProcessor):
 		
 	def process(self, notes):
 		changed = {}
-		for note in notes.values(): 
-			changed[note] = re.search(eoftags_re, note.contents)
+		for note in notes.values():
+			try:
+				changed[note] = False if note.contents.count('\n') < 2 else re.search(eoftags_re, note.contents)
+			except:
+				print(note)
+				raise
 		return changed
 		
 	
