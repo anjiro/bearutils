@@ -1,4 +1,5 @@
-"""
+"""IN PROGRESS, NOT CURRENTLY WORKING
+
 Adds summaries defined in individual notes to links in other notes. A summary is a single paragraph starting with *Summary:*, as in this example:
 	
 	 # Here is a note
