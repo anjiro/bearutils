@@ -1,6 +1,6 @@
 """Move tags from the end of the file to the line after the note's title."""
 import re
-from bear import NotesProcessor
+from .notes_processor import NotesProcessor
 from regexes import tag_re, eoftags_re
 
 class TagMover(NotesProcessor):

@@ -1,5 +1,5 @@
 import re
-from bear import NotesProcessor
+from .notes_processor import NotesProcessor
 from utils import tag_re, replace_section
 from collections import defaultdict
 

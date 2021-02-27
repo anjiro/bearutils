@@ -1,7 +1,7 @@
 import re
 from urllib.parse import quote
 from utils import replace_section, Header
-from bear import NotesProcessor
+from .notes_processor import NotesProcessor
 
 
 class TOC(NotesProcessor):

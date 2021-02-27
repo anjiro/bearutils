@@ -1,5 +1,4 @@
 import re
-import x_callback_url
 from requests.structures import CaseInsensitiveDict as cidict
 from collections import namedtuple
 from time import time
@@ -102,35 +101,6 @@ def replace_section(text, header, new_text='', blank_lines_after_header=0, befor
 	return text, ''
 		
 		
-def call_bear(action, callback=None, **params):
-	"""Call Bear with the given actions, using the parameters in the URL. Quotes parameters. If callback is None, block until the call to Bear returns and return the result; otherwise return None immediately and call the callback when the result is ready."""
-	
-	sem = True
-	r = None
-	
-	if callback is None:
-		sem = False
-		def cb(i):
-			nonlocal sem, r
-			sem = True
-			r = i
-	else:
-		cb = callback
-		
-	url = f'bear://x-callback-url/{action}' + x_callback_url.params(params)
-	x_callback_url.open_url(url, cb)
-	
-	#Wait up to n seconds for Bear to return, then call the callback
-	if callback is None:
-		t = time()
-		while not sem:
-			if time() - t > 4:
-				raise ValueError(f"Can't get return from {url}, sem is {sem}")
-		return r
-		
-		
-def is_bear_id(s):
-	return re.match("-".join(f'[a-fA-F0-9]{{{n}}}' for n in (8,4,4,4,12,5,16))+'$', s.strip())
 	
 	
 def load_classes_from_options(options, sections, instantiate=True, module_dir='processors', **kwargs):

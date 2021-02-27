@@ -32,7 +32,7 @@ which will be similarly transformed:
 To avoid over-writing existing text, the script will only add summaries when the link is at the end of a line. This means that summaries will not be updated if they have changed.
 """
 import re
-from bear import NotesProcessor
+from .notes_processor import NotesProcessor
 from utils import link_re
 from collections import defaultdict
 

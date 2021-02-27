@@ -1,6 +1,6 @@
 import re
-from bear import NotesProcessor
-from utils import tag_re
+from .notes_processor import NotesProcessor
+from regexes import tag_re
 from collections import defaultdict
 
 class Highlighter(NotesProcessor):
