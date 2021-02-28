@@ -32,6 +32,6 @@ class TagMover(NotesProcessor):
 			contents[1] += ' ' + tags
 		#Otherwise make a new tags line
 		else:
-			contents.insert(tags+'\n', 1)
+			contents.insert(1, tags+'\n')
 			
 		return '\n'.join(contents).strip()
