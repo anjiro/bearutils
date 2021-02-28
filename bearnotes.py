@@ -199,8 +199,8 @@ class BearNotes:
 						note.modified = True
 						if note.title not in self.notes:
 							self.notes[note.title] = note
-			for note, ps in changed_by.items():
-				log.info(f"{note} changed by: {', '.join(ps)}")
+		for note, ps in changed_by.items():
+			log.info(f"{note.title} changed by: {', '.join(ps)}")
 						
 					
 	def save_to_bear(self):
