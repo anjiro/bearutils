@@ -8,6 +8,8 @@ from collections import defaultdict
 from utils import *
 from regexes import *
 from bearcomms import *
+import logging
+log = logging.getLogger(__name__)
 
 
 class Note:
@@ -185,16 +187,20 @@ class BearNotes:
 		
 	def process_notes(self):
 		"""Process all the notes."""
+		changed_by = defaultdict(list)
 		for p in self.processors:
 			changed = p.process(self.notes)
 			if changed is not None:
 				for note, did_change in changed.items():
 					if did_change:
+						changed_by[note].append(p.__class__.__name__)
 						note.get_note_contents_from_bear()
 						note.contents = p.render(note)
 						note.modified = True
 						if note.title not in self.notes:
 							self.notes[note.title] = note
+			for note, ps in changed_by.items():
+				log.info(f"{note} changed by: {', '.join(ps)}")
 						
 					
 	def save_to_bear(self):
