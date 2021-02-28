@@ -42,4 +42,8 @@ def call_bear(action, callback=None, timeout=4, **params):
 		
 		
 def is_bear_id(s):
-	return re.match("-".join(f'[a-fA-F0-9]{{{n}}}' for n in (8,4,4,4,12,5,16))+'$', s.strip())
+	valid_seg_lengths = [
+		(8,4,4,4,12,3,16),
+		(8,4,4,4,12,5,16),
+	]
+	return any(re.match("-".join(f'[a-fA-F0-9]{{{n}}}' for n in sl)+'$', s.strip()) for sl in valid_seg_lengths)
