@@ -29,7 +29,8 @@ class Backlinker(NotesProcessor):
 				self.options['backlinks_heading'], self.options['backlinks_heading'])
 				
 			#Save the old backlinks, minus the header, to compare with to determine if something has changed
-			old_backlinks[note] = re.sub(rf'^{re.escape(self.options["backlinks_heading"])}[\t ]*\n', '', oldbl)
+			if oldbl:
+				old_backlinks[note] = re.sub(rf'^{re.escape(self.options["backlinks_heading"])}[\t ]*\n', '', oldbl)
 			
 			for link, context in self.extract_links(text):
 				#If we can't find a Note with the link title, see if it's a subheading link
@@ -46,7 +47,7 @@ class Backlinker(NotesProcessor):
 		for title in self.backlinks:
 			note = notes[title]
 			self.render_backlinks(note)
-			self.changed[note] = self.rendered_backlinks[note].strip() != old_backlinks[note].strip()
+			self.changed[note] = self.rendered_backlinks[note].strip() != old_backlinks.get(note, '').strip()
 			
 		#Find any notes that have a backlinks section but no longer have any links pointing to them
 		for note in old_backlinks:
