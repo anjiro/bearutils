@@ -30,9 +30,10 @@ class Backlinker(NotesProcessor):
 			old_backlinks[note] = re.sub(rf'^{re.escape(self.options["backlinks_heading"])}[\t ]*\n', '', oldbl)
 			
 			for link, context in self.extract_links(text):
-				#If we can't find the link, see if it's a subheading link
+				#If we can't find a Note with the link title, see if it's a subheading link
 				dest = notes.get(link, notes.get(re.split(r'(?<!\\)/', link)[0]))
 				
+				#Can't find a matching Note
 				if not dest:
 					continue
 				
@@ -44,6 +45,12 @@ class Backlinker(NotesProcessor):
 			note = notes[title]
 			self.render_backlinks(note)
 			self.changed[note] = self.rendered_backlinks[note].strip() != old_backlinks[note].strip()
+			
+		#Find any notes that have a backlinks section but no longer have any links pointing to them
+		for note in old_backlinks:
+			if note.title not in self.backlinks:
+				self.rendered_backlinks[note] = ''
+				self.changed[note] = True
 		
 		return self.changed
 
@@ -67,9 +74,13 @@ class Backlinker(NotesProcessor):
 		txt = note.contents
 		if note not in self.rendered_backlinks:
 			return txt
-			
-		blh = self.options['backlinks_heading']
-		return replace_section(txt, blh, f'{blh}\n{self.rendered_backlinks[note]}')[0]
+		
+		if len(self.rendered_backlinks[note]) > 0:
+			backlink_section = self.options['backlinks_heading'] + "\n" + self.rendered_backlinks[note]
+		else:
+			backlink_section = ''
+		
+		return replace_section(txt, self.options['backlinks_heading'], backlink_section)[0]
 	
 
 	def extract_links(self, text):
