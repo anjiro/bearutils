@@ -36,6 +36,8 @@ import re
 from .notes_processor import NotesProcessor
 from utils import link_re
 from collections import defaultdict
+import logging
+log = logging.getLogger(__name__)
 
 summary_re: r'^[\t ]*\*Summary:\*[\t ]+(?P<summary>.+)\n\n'
 

@@ -3,6 +3,8 @@ from .notes_processor import NotesProcessor
 from itertools import groupby
 from operator import itemgetter
 from utils import cidict, tag_re, replace_section
+import logging
+log = logging.getLogger(__name__)
 
 class Backlinker(NotesProcessor):
 	def __init__(self, **options):
@@ -79,7 +81,7 @@ class Backlinker(NotesProcessor):
 			backlink_section = self.options['backlinks_heading'] + "\n" + self.rendered_backlinks[note]
 		else:
 			backlink_section = ''
-		
+			
 		return replace_section(txt, self.options['backlinks_heading'], backlink_section)[0]
 	
 

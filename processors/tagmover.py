@@ -2,6 +2,8 @@
 import re
 from .notes_processor import NotesProcessor
 from regexes import tag_re, eoftags_re
+import logging
+log = logging.getLogger(__name__)
 
 class TagMover(NotesProcessor):
 	def __init__(self, **options):

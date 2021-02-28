@@ -2,6 +2,8 @@ import re
 from .notes_processor import NotesProcessor
 from utils import tag_re
 from collections import defaultdict
+import logging
+log = logging.getLogger(__name__)
 
 class Appender(NotesProcessor):
 	#To match this action in the Bearutils note

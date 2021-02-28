@@ -1,8 +1,11 @@
-import configparser, re, sys
+import configparser, logging, re, sys
 import clipboard, console, dialogs
 from bearnotes import BearNotes
 from bearcomms import is_bear_id
 from utils import load_classes_from_options
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+log = logging.getLogger(__name__)
 
 # Actions
 ACTION_IDS = 1

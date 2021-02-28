@@ -2,6 +2,8 @@ import re
 from urllib.parse import quote
 from utils import replace_section, Header
 from .notes_processor import NotesProcessor
+import logging
+log = logging.getLogger(__name__)
 
 
 class TOC(NotesProcessor):
