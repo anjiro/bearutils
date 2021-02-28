@@ -4,7 +4,7 @@ from bearnotes import BearNotes
 from bearcomms import is_bear_id
 from utils import load_classes_from_options
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 log = logging.getLogger(__name__)
 
 # Actions
@@ -32,6 +32,8 @@ def process_bear_files(save=True, test_one=None):
 	options = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation(),
 		converters={'list': lambda l: re.split('[\t ]*,[\t ]*', l)})
 	options.read('options.ini')
+	
+	log.setLevel(options.get('Bearutils', 'log_level', fallback='WARNING'))
 	
 	#If there are Bear note IDs on the clipboard, prompt whether to use them or load a backup file
 	cb = clipboard.get().split('\n')

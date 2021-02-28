@@ -1,6 +1,8 @@
 """Utilities for communicating with Bear."""
 import re, time
 import x_callback_url
+import logging
+log = logging.getLogger(__name__)
 
 
 def fetch_note(**params):
