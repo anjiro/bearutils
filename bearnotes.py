@@ -199,6 +199,7 @@ class BearNotes:
 						note.modified = True
 						if note.title not in self.notes:
 							self.notes[note.title] = note
+		log.info(f'{len(changed_by)} notes modified')
 		for note, ps in changed_by.items():
 			log.info(f"{note.title} changed by: {', '.join(ps)}")
 						

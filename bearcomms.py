@@ -1,6 +1,6 @@
 """Utilities for communicating with Bear."""
 import re, time
-import x_callback_url
+import bearnotes, x_callback_url
 import logging
 log = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ def fetch_note(**params):
 		raise ValueError("Not a valid Bear note ID")
 	info = call_bear('open-note', **params)
 	contents = info.pop('note')
-	note = Note(info, contents)
+	note = bearnotes.Note(info, contents)
 	note.fetch_from_bear = False
 	return note
 	

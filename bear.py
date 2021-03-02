@@ -1,7 +1,7 @@
-import configparser, logging, re, sys
+import configparser, logging, re, os, sys
 import clipboard, console, dialogs
 from bearnotes import BearNotes
-from bearcomms import is_bear_id
+from bearcomms import is_bear_id, fetch_note
 from utils import load_classes_from_options
 
 logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
@@ -33,7 +33,10 @@ def process_bear_files(save=True, test_one=None):
 		converters={'list': lambda l: re.split('[\t ]*,[\t ]*', l)})
 	options.read('options.ini')
 	
-	log.setLevel(options.get('Bearutils', 'log_level', fallback='WARNING'))
+	#Set the level for all loggers
+	level = options.get('Bearutils', 'log_level', fallback='WARNING')
+	for name in logging.root.manager.loggerDict:
+		logging.getLogger(name).setLevel(level)
 	
 	#If there are Bear note IDs on the clipboard, prompt whether to use them or load a backup file
 	cb = clipboard.get().split('\n')
@@ -47,16 +50,18 @@ def process_bear_files(save=True, test_one=None):
 	#Processa a Bear backup file
 	if action == ACTION_BATCH:
 		processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
-		if 'NoteActions' in options:
+		if 'Actions' in options:
 			#Set up any actions requested in the Bearutils actions note
-			actions_note = fetch_note(title=options['NoteActions']['actions_note'])
+			actions_note = fetch_note(title=options['Actions']['actions_note'])
 			#Load the classes specified in the config file for the Action note
-			for _class, opts in load_classes_from_options(options, options['NoteActions'].getlist('classes'), instantiate=False):
+			for _class, opts in load_classes_from_options(options, options['Actions'].getlist('classes'), instantiate=False):
+				log.info(f'Checking for actions with {_class.__name__}')
 				for matcher in _class.action_matchers:
 					for match in matcher.finditer(actions_note.contents):
 						opts_copy = dict(opts)
 						opts_copy.update(match.groupdict())
 						processors.append(_class(**opts_copy))
+						log.info(f'Instantiated {_class.__name__} from line: {match.group(0)}')
 			
 	#Work with one or more notes based on IDs		
 	elif action == ACTION_IDS:
@@ -105,6 +110,7 @@ def process_bear_files(save=True, test_one=None):
 			print(f"{os.path.split(backup_file)[-1]} isn't a .bearbk file")
 			return
 		bn.read_backup_file(backup_file)
+		log.info(f'Loaded {len(bn.notes)} notes from backup file')
 	
 	bn.process_notes()
 	
