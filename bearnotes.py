@@ -1,7 +1,7 @@
 import os, json, io, re
 import dateutil.parser
 import dialogs
-from datetime import datetime
+from datetime import datetime, timezone
 from zipfile import ZipFile
 from operator import attrgetter
 from collections import defaultdict
@@ -29,10 +29,12 @@ class Note:
 			for k,v in self.info.items():
 				if v and 'Date' in k:
 					self.info[k] = dateutil.parser.parse(v)
-		else:
-			self.modificationDate = datetime.now()
 					
 			self.__dict__.update(self.info)
+			
+		else:
+			self.id = None
+			self.modificationDate = datetime.now(timezone.utc)		
 		
 		#We need to get notes with images via x-callback to preserve the images
 		self.fetch_from_bear = '[assets/' in self.contents
