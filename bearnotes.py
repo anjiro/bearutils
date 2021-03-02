@@ -189,6 +189,7 @@ class BearNotes:
 		"""Process all the notes."""
 		changed_by = defaultdict(list)
 		for p in self.processors:
+			log.info(f'Run processor {p.__class__.__name__}')
 			changed = p.process(self.notes)
 			if changed is not None:
 				for note, did_change in changed.items():
