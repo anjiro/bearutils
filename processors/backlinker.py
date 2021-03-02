@@ -12,6 +12,7 @@ class Backlinker(NotesProcessor):
 			'backlinks_heading': '## Backlinks',
 			'context_lookaround': 250,
 			'scrub_tags_from_context': True,
+			'ignore_links_in_notes': [],
 		}
 		self.options.update(options)
 
@@ -31,6 +32,9 @@ class Backlinker(NotesProcessor):
 			#Save the old backlinks, minus the header, to compare with to determine if something has changed
 			if oldbl:
 				old_backlinks[note] = re.sub(rf'^{re.escape(self.options["backlinks_heading"])}[\t ]*\n', '', oldbl)
+				
+			if note.title in self.options['ignore_links_in_notes']:
+				continue
 			
 			for link, context in self.extract_links(text):
 				#If we can't find a Note with the link title, see if it's a subheading link
