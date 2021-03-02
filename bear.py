@@ -44,7 +44,7 @@ def process_bear_files(save=True, test_one=None):
 	
 	processors = []
 	
-	#Processa a Bear backup file
+	#Process a Bear backup file
 	if action == ACTION_BATCH:
 		processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
 		if 'NoteActions' in options:
