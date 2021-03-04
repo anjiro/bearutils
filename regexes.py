@@ -13,3 +13,6 @@ link_re = r'\[\[(?P<link>[^\s\]][^\]]*)(?<!\s)]]'
 
 #Match tags at the end of a note
 eoftags_re = r'\n[\t ]*(' + tag_re + r'[\t ]*)+$'
+
+#Match list entries
+list_re = r'(?<=\n)(?P<tabs>\t*)(?P<bullet>[*\-]|\d+\.)[\t ]+'
