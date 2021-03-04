@@ -16,3 +16,4 @@
 * Collect multiple tags
 * Option to remove all highlighting
 * Search and replace, including quick common actions defined in options.ini. Possible to do interactive with highlighting? Not without special purpose UI.
+* TOC: add Top links to each section if length of doc exceeds some amount
