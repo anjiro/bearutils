@@ -17,3 +17,4 @@
 * Option to remove all highlighting
 * Search and replace, including quick common actions defined in options.ini. Possible to do interactive with highlighting? Not without special purpose UI.
 * Floating keyboard helper: mark sections of bullets to indent or dedent
+* TOC: add Top links to each section if length of doc exceeds some amount
