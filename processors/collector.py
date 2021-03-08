@@ -1,7 +1,7 @@
 import re
 from .notes_processor import NotesProcessor
 from bearnotes import Note
-from regexes import _tag_core
+from regexes import tag_core
 from utils import replace_section
 from collections import defaultdict
 import logging
@@ -10,7 +10,7 @@ log = logging.getLogger(__name__)
 
 class Collector(NotesProcessor):
 	#To match this action in the Bearutils note
-	action_matchers = [re.compile('^\*[\t ]+collect[\t ]+`?' + _tag_core + '`?[\t ]+in[\t ]+\[\[(?P<dest>.+?)]][\t ]*$', flags=re.I|re.M)]
+	action_matchers = [re.compile('^\*[\t ]+collect[\t ]+`?' + tag_core + '`?[\t ]+in[\t ]+\[\[(?P<dest>.+?)]][\t ]*$', flags=re.I|re.M)]
 	
 	def __init__(self, **options):
 		"""Collect links to notes with a given tag in a specified note, in a given section. Don't add links that already exist anywhere in the note. Provide keyword arguments:
