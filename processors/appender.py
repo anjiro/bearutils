@@ -1,6 +1,6 @@
 import re
 from .notes_processor import NotesProcessor
-from utils import tag_re
+from regexes import tag_core
 from collections import defaultdict
 import logging
 log = logging.getLogger(__name__)
@@ -8,8 +8,8 @@ log = logging.getLogger(__name__)
 class Appender(NotesProcessor):
 	#To match this action in the Bearutils note
 	action_matchers = (
-		re.compile('^\*[\t ]+(?P<do>append|prepend)[\t ]+to[\t ]+(?P<to>titles|notes)[\t ]+in[\t ]+`?' + tag_re + '`?[\t ]*:(?P<what>.+)$', flags=re.I|re.M),
-		re.compile('^\*[\t ]+(?P<do>remove)[\t ]+from[\t ]+(?P<to>titles|notes)[\t ]+in[\t ]+`?' + tag_re + '`?[\t ]*:(?P<what>.+)$', flags=re.I|re.M),
+		re.compile('^\*[\t ]+(?P<do>append|prepend)[\t ]+to[\t ]+(?P<to>titles|notes)[\t ]+in[\t ]+`?' + tag_core + '`?[\t ]*:(?P<what>.+)$', flags=re.I|re.M),
+		re.compile('^\*[\t ]+(?P<do>remove)[\t ]+from[\t ]+(?P<to>titles|notes)[\t ]+in[\t ]+`?' + tag_core + '`?[\t ]*:(?P<what>.+)$', flags=re.I|re.M),
 	)
 	
 	
@@ -32,20 +32,19 @@ class Appender(NotesProcessor):
 			do = do.lower()
 			to = to.lower()
 			
-			for note in notes.values():
-				if tag.strip('#') not in note.tags:
-					continue
-				if to == 'titles':
-					if do == 'append':
-						print(f"append to {note.title}")
-						self.note_actions[note].append(lambda c:
-							re.subn('\n', what+'\n', c, count=1)[0])
-					elif do == 'prepend':
-						self.note_actions[note].append(lambda c:
-							re.sub('^', what, c))
-					elif do == 'remove' and re.match(rf'^(?:{what}|[^\n]+{what}\n)', note.title):
-						self.note_actions[note].append(lambda c:
-							re.sub(rf'^(?:{what}|([^\n]+){what}(?=\n))', r'\1', c))
+			if tag.strip('#') not in note.tags:
+				continue
+			if to == 'titles':
+				if do == 'append' and not note.title.strip().endswith(what):
+					log.info(f"append to {note.title}")
+					self.note_actions[note].append(lambda c:
+						re.subn('\n', what+'\n', c, count=1)[0])
+				elif do == 'prepend' and not note.title.startswith(what):
+					self.note_actions[note].append(lambda c:
+						re.sub('^', what, c))
+				elif do == 'remove' and re.match(rf'^(?:{what}|[^\n]+{what}\n)', note.title):
+					self.note_actions[note].append(lambda c:
+						re.sub(rf'^(?:{what}|([^\n]+){what}(?=\n))', r'\1', c))
 								
 		return self.note_actions
 		
