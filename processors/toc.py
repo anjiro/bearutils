@@ -42,7 +42,7 @@ class TOC(NotesProcessor):
 			if h.header in excludes or (0 < self.options['min_level'] > h.level) or (0 < self.options['max_level'] < h.level):
 				continue
 				
-			r.append("\t"*(h.level-2) + f'* [{h.title}](bear://x-callback-url/open-note?id={note.id}&header={quote(h.title)})')
+			r.append("\t"*(h.level-2) + f'* [[#{h.title}|{h.title}]]')
 
 		if len(r) <= 1:
 			print('no items')

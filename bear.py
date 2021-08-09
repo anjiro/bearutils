@@ -1,7 +1,5 @@
 import configparser, logging, re, os, sys
-import clipboard, console, dialogs
-from bearnotes import BearNotes
-from bearcomms import is_bear_id, fetch_note
+from bearnotes import WikiNotes
 from utils import load_classes_from_options
 
 logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
@@ -11,45 +9,41 @@ log = logging.getLogger(__name__)
 ACTION_IDS = 1
 ACTION_BATCH = 2
 
-def ids_or_batch():
-	return console.alert('BearUtils', 
-		'I found possible Bear Note IDs on the clipboard. What do you want to do?', 
-		'Use IDs from clipboard', # action = ACTION_IDS
-		'Select a Bear backup file', # action = ACTION_BATCH
-	)
 
-		
 def process_bear_files(save=True, test_one=None):
 	#Determine where in options to get note processors to load based on the response to the dialog
 	action_processors = {
 		ACTION_IDS: 'some_processors',
 		ACTION_BATCH: 'all_processors',
 	}
-	
+
 	#Default action
 	action = ACTION_BATCH
-	
+
 	options = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation(),
 		converters={'list': lambda l: re.split('[\t ]*,[\t ]*', l)})
 	options.read('options.ini')
-	
+
 	#Set the level for all loggers
 	level = options.get('Bearutils', 'log_level', fallback='WARNING')
 	for name in logging.root.manager.loggerDict:
 		logging.getLogger(name).setLevel(level)
-	
+
+	"""
 	#If there are Bear note IDs on the clipboard, prompt whether to use them or load a backup file
 	cb = clipboard.get().split('\n')
 	if all(is_bear_id(l) for l in cb):
 		action = ids_or_batch()
 		if action < 0:
 			return
-	
+	"""
+
 	processors = []
-	
+
 	#Process a Bear backup file
 	if action == ACTION_BATCH:
 		processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
+		"""
 		if 'Actions' in options:
 			#Set up any actions requested in the Bearutils actions note
 			actions_note = fetch_note(title=options['Actions']['actions_note'])
@@ -62,7 +56,9 @@ def process_bear_files(save=True, test_one=None):
 						opts_copy.update(match.groupdict())
 						processors.append(_class(**opts_copy))
 						log.info(f'Instantiated {_class.__name__} from line: {match.group(0)}')
-			
+			"""
+
+	"""
 	#Work with one or more notes based on IDs		
 	elif action == ACTION_IDS:
 		classopts = {}
@@ -84,22 +80,23 @@ def process_bear_files(save=True, test_one=None):
 			return
 		if not user_opts:
 			return
-		
+
 		for k,v in user_opts.items():
 			classname, arg = k.split("!")
 			classopts[classname][arg] = v
-			
+
 		for _class, _ in classes:
 			classname = _class.__name__
 			if classopts[classname]['enable']:
 				processors.append(_class(**classopts[classname]))
-	
-	bn = BearNotes()
-	
+	"""
+
+	bn = WikiNotes()
+
 	#Load the specified processors with their defined options
 	for processor in processors:
 		bn.register_processor(processor)
-		
+
 	if action == ACTION_IDS:
 		bn.fetch_from_bear(cb)
 	elif action == ACTION_BATCH:
@@ -111,9 +108,9 @@ def process_bear_files(save=True, test_one=None):
 			return
 		bn.read_backup_file(backup_file)
 		log.info(f'Loaded {len(bn.notes)} notes from backup file')
-	
+
 	bn.process_notes()
-	
+
 	if save:
 		if test_one:
 			bn[test_one].save_to_bear()
@@ -121,9 +118,47 @@ def process_bear_files(save=True, test_one=None):
 			bn.save_to_bear()
 	else:
 		print('Warning: save is False')
-	
+
 	return bn
-	
-	
+
+def process_wiki_files(wikidir=None, filelist=None, save=True):
+	#Determine where in options to get note processors to load based on the response to the dialog
+	action_processors = {
+		ACTION_IDS: 'some_processors',
+		ACTION_BATCH: 'all_processors',
+	}
+
+	#Default action
+	action = ACTION_BATCH
+
+	options = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation(),
+		converters={'list': lambda l: re.split('[\t ]*,[\t ]*', l)})
+	options.read('options.ini')
+
+	#Set the level for all loggers
+	level = options.get('Bearutils', 'log_level', fallback='WARNING')
+	for name in logging.root.manager.loggerDict:
+		logging.getLogger(name).setLevel(level)
+
+	processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
+
+	wn = WikiNotes()
+
+	#Load the specified processors with their defined options
+	for processor in processors:
+		wn.register_processor(processor)
+
+	wn.read_md_files(wikidir, filelist)
+	log.info(f'Loaded {len(wn.notes)} notes')
+
+	wn.process_notes()
+
+	if save:
+		wn.save()
+	else:
+		print('Warning: save is False')
+
+	return wn
+
 if __name__ == "__main__":	
-	process_bear_files()
+	wn = process_wiki_files('~/wiki')
