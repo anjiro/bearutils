@@ -141,6 +141,18 @@ def process_wiki_files(wikidir=None, filelist=None, save=True):
 		logging.getLogger(name).setLevel(level)
 
 	processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
+	if 'Actions' in options:
+		#Set up any actions requested in the Bearutils actions note
+		actions_note = fetch_note(title=options['Actions']['actions_note'], wikidir=wikidir)
+		#Load the classes specified in the config file for the Action note
+		for _class, opts in load_classes_from_options(options, options['Actions'].getlist('classes'), instantiate=False):
+			log.info(f'Checking for actions with {_class.__name__}')
+			for matcher in _class.action_matchers:
+				for match in matcher.finditer(actions_note.contents):
+					opts_copy = dict(opts)
+					opts_copy.update(match.groupdict())
+					processors.append(_class(**opts_copy))
+					log.info(f'Instantiated {_class.__name__} from line: {match.group(0)}')
 
 	wn = WikiNotes()
 
