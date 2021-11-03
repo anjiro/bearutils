@@ -1,5 +1,5 @@
 import configparser, logging, re, os, sys
-from bearnotes import WikiNotes
+from bearnotes import WikiNotes, fetch_note
 from utils import load_classes_from_options
 
 logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
