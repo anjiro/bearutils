@@ -9,6 +9,15 @@ import logging
 log = logging.getLogger(__name__)
 
 
+def fetch_note(title, wikidir, extension='.md'):
+	"""Fetch the given note and return a Note object."""
+	wikidir = os.path.expanduser(wikidir)
+	fn = os.path.join(wikidir, title + extension)
+	info = {'modificationDate': datetime.fromtimestamp(os.path.getmtime(fn))}
+	with open(fn) as f:
+		contents = f.read()
+	return Note(info, contents, filename=fn)
+	
 class Note:
 	def __init__(self, info=None, contents='', filename=None):
 		self.filename = filename
