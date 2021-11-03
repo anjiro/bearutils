@@ -43,7 +43,6 @@ def process_bear_files(save=True, test_one=None):
 	#Process a Bear backup file
 	if action == ACTION_BATCH:
 		processors = load_classes_from_options(options, options['Processors'].getlist(action_processors[action]))
-		"""
 		if 'Actions' in options:
 			#Set up any actions requested in the Bearutils actions note
 			actions_note = fetch_note(title=options['Actions']['actions_note'])
@@ -56,7 +55,6 @@ def process_bear_files(save=True, test_one=None):
 						opts_copy.update(match.groupdict())
 						processors.append(_class(**opts_copy))
 						log.info(f'Instantiated {_class.__name__} from line: {match.group(0)}')
-			"""
 
 	"""
 	#Work with one or more notes based on IDs		
@@ -173,4 +171,4 @@ def process_wiki_files(wikidir=None, filelist=None, save=True):
 	return wn
 
 if __name__ == "__main__":	
-	wn = process_wiki_files('~/wiki')
+	wn = process_wiki_files('~/data/projects/wiki')
