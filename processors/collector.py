@@ -1,7 +1,7 @@
 import re
 from .notes_processor import NotesProcessor
 from bearnotes import Note
-from regexes import tag_core
+from regexes import tag_core, link_re
 from utils import replace_section
 from collections import defaultdict
 import logging
@@ -26,8 +26,13 @@ class Collector(NotesProcessor):
 	def process(self, notes):
 		tag = self.options['tag'].strip(':')
 		dest = self.options['dest']
-		existing_links = notes[dest].links if dest in notes else []
 		new_links = []
+		existing_links = []
+		if dest in notes:
+			contents = replace_section(notes[dest].contents, self.options['collect_section_title'])[0]
+			if 'backlinks_heading' in self.options['all_options']:
+				contents = replace_section(contents, self.options['all_options']['backlinks_heading'])[0]
+			existing_links = re.findall(link_re, contents) or []
 		
 		for note in notes.values():
 			if tag not in note.tags: continue
