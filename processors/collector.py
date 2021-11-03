@@ -24,7 +24,7 @@ class Collector(NotesProcessor):
 		
 		
 	def process(self, notes):
-		tag = self.options['tag'].strip('#')
+		tag = self.options['tag'].strip(':')
 		dest = self.options['dest']
 		existing_links = notes[dest].links if dest in notes else []
 		new_links = []

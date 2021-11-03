@@ -67,7 +67,7 @@ class Note:
 
 	def extract_tags(self):
 		"""Extract all tags from the note, but not those inside backticks."""
-		self.tags = [tag.strip('#') for tag in re.findall(tag_re, self.contents)]
+		self.tags = [tag.strip(':') for tag in re.findall(tag_re, self.contents)]
 
 
 	def extract_links(self):

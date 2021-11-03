@@ -1,5 +1,5 @@
-#Match Bear tags
-tag_core = r'(?P<tag>#[^\s#][^#\n]*(?<!\s)#|#[^#\s]+)'
+#Match tags
+tag_core = r'(?P<tag>:[^\s:][^:\n]*(?<!\s):)'
 tag_re = r'(?:(?:^|(?<=\s))' + tag_core + r'(?=$|\s))'
 
 #Match a header; format using re.escape
